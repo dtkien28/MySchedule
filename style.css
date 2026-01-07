@@ -1,14 +1,209 @@
+/* Thiết lập chung cho toàn bộ trang */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f0f5f9; /* Màu nền xanh nhạt cực nhẹ */
+    color: #333;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* Khu vực nhập liệu (Inputs) */
+.input {
+    background-color: #ffffff;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    width: 90%;
+    max-width: 1000px;
+    margin-bottom: 30px;
+    border-top: 5px solid #007bff; /* Viền xanh dương đậm phía trên */
+}
+
+.input div {
+    display: flex;
+    flex-direction: column;
+}
+
+.input label {
+    font-weight: bold;
+    margin-bottom: 5px;
+    color: #0056b3; /* Chữ label xanh dương */
+}
+
+.input input {
+    padding: 10px;
+    border: 1px solid #c2d6ea;
+    border-radius: 6px;
+    outline: none;
+    transition: border-color 0.3s;
+}
+
+.input input:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 5px rgba(0, 123, 255, 0.2);
+}
+
+/* Các nút bấm */
+button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 10px;
+}
+
+/* Nút thêm môn - Xanh dương đậm */
+button:nth-of-type(1) {
+    background-color: #007bff;
+    color: white;
+}
+
+button:nth-of-type(1):hover {
+    background-color: #0056b3;
+}
+
+/* Nút xóa môn - Đỏ (để cảnh báo) hoặc bạn có thể đổi sang xanh nhạt */
+button:nth-of-type(2) {
+    background-color: #e74c3c;
+    color: white;
+}
+
+/* Nút sửa và Reload - Xanh dương nhạt/Xám xanh */
+button:nth-of-type(3), button:nth-of-type(4) {
+    background-color: #6c757d;
+    color: white;
+}
+
+button:nth-of-type(3):hover, button:nth-of-type(4):hover {
+    background-color: #5a6268;
+}
+
+/* Khu vực Thời khóa biểu (Schedule) */
+.schedule {
+    width: 95%;
+    max-width: 1100px;
+    background-color: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.schedule label {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #004085;
+    margin: 20px 0 10px 0;
+    text-align: center;
+    border-bottom: 2px solid #007bff;
+    padding-bottom: 5px;
+}
+
+/* Bảng (Table) */
 table {
-            width: 100%;
-            border-collapse: collapse; /* Gộp các đường kẻ lại thành 1 */
-        }
-        table, th, td {
-            border: 1px solid black;
-        }
-        th, td {
-            padding: 10px;
-            text-align: left;
-        }
-        th {
-            background-color: #f2f2f2;
-        }
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 30px;
+    overflow: hidden;
+    border-radius: 8px;
+}
+
+/* Tiêu đề bảng */
+th {
+    background-color: #007bff; /* Nền xanh dương cho tiêu đề */
+    color: white;
+    font-weight: 600;
+    padding: 15px;
+    text-align: center;
+}
+
+/* Các ô dữ liệu */
+td {
+    border: 1px solid #dee2e6;
+    padding: 12px;
+    text-align: center;
+    height: 60px; /* Tăng chiều cao để dễ nhìn */
+}
+
+/* Dòng xen kẽ màu xanh cực nhạt để dễ theo dõi hàng */
+tr:nth-child(even) {
+    background-color: #f8fbff;
+}
+
+/* Hiệu ứng khi di chuột qua hàng */
+tr:hover {
+    background-color: #e1f0ff;
+}
+
+/* Cột thời gian (cột đầu tiên) */
+td:first-child {
+    font-weight: bold;
+    background-color: #e9ecef;
+    color: #495057;
+    width: 120px;
+}
+
+/* Container chính cho phần đầu trang */
+.header-profile {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
+
+/* Khung tròn bao quanh ảnh */
+.avatar-wrapper {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%; /* Tạo hình tròn */
+    border: 4px solid #007bff; /* Viền xanh dương cùng tông với bảng */
+    padding: 3px;
+    background-color: white;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    overflow: hidden; /* Cắt ảnh thừa để luôn nằm trong hình tròn */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Định dạng ảnh bên trong */
+.avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* Giữ tỷ lệ ảnh không bị biến dạng */
+    border-radius: 50%;
+}
+
+/* Định dạng Footer */
+.footer {
+    width: 100%;
+    background-color: #007bff; /* Sử dụng màu xanh chủ đạo */
+    color: white;
+    text-align: center;
+    padding: 20px 0;
+    margin-top: 40px; /* Khoảng cách với phần bảng */
+    border-radius: 8px 8px 0 0; /* Bo góc trên giống như bảng */
+}
+
+.footer-content p {
+    margin: 5px 0;
+    font-size: 0.9rem;
+}
+
+.footer-content a {
+    color: #e1f0ff; /* Màu xanh nhạt để nổi bật trên nền đậm */
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.footer-content a:hover {
+    text-decoration: underline;
+}
