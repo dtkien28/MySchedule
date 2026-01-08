@@ -1,4 +1,5 @@
 import { Subject, subject_list, addSubject, deleteSubject, editSubject } from "../models/subject.js"
+import { TimeAndNote } from "../models/time_and_cancel.js"
 
 const table_1 = document.getElementById("table-gd1").getElementsByTagName('tbody')[0]
 const table_2 = document.getElementById("table-gd2").getElementsByTagName('tbody')[0]
@@ -31,79 +32,80 @@ const time_input = document.getElementById('time')
 /** @type {HTMLInputElement} */
 const place_input = document.getElementById('place')
 
-let class_code_text = class_code_input.value
-let subject_name_text = subject_name_input.value
-let stage_text = stage_input.value
-let time_text = time_input.value
-let place_text = place_input.value
-
 add_btn.addEventListener('click', add_subject)
 // delete_btn.addEventListener('click', )
 // edit_btn.addEventListener('click', )
 // reload_btn.addEventListener('click', )
 
-function getColumnIndex(dayText)
-{
-    const days = ["T2", "T3", "T4", "T5", "T6", "T7", "Chủ nhật"]
-    return days.indexOf(dayText)
+
+function getColumnIndex(dayText) {
+    const days = ["T2", "T3", "T4", "T5", "T6", "T7", "Chủ nhật"];
+    return days.findIndex(day => dayText.includes(day)) + 1; 
 }
 
-function getRowIndex(timeText)
-{
-    const times = ["7:00-9:00", "9:15-11:15", "13:00-15:00", "15:15-171:15", "17:45-20:45"]
-    return times.indexOf(timeText)
+function getRowIndex(timeText) {
+    const times = ["7:00 -9:00", "9:15 -11:15", "13:00 -15:00", "15:15 -17:15", "17:45 -20:45"];
+    return times.findIndex(time => timeText.includes(time));
 }
 
-function renderSchedule()
-{
+function renderSchedule() {
     const clearTable = (tbody) => {
-        for (let r=0; r<tbody.rows.length; r++)
-        {
-            for (let c=0; c<tbody.rows[r].cells.length; c++)
-            {
+        for (let r = 0; r < tbody.rows.length; r++) {
+            for (let c = 1; c < tbody.rows[r].cells.length; c++) {
                 tbody.rows[r].cells[c].innerHTML = "";
             }
         }
     }
 
-    clearTable(table_1)
-    clearTable(table_2)
+    clearTable(table_1);
+    clearTable(table_2);
 
-    subject_list.forEach( s => {
-        const target_table = (s.stage_input==="1") ? table_1 : table_2
-
-        const schedules = s.time.split(";")
+    subject_list.forEach(s => {
+        const target_table = (s.stage === "1") ? table_1 : table_2;
+        const schedules = s.time.split(";");
 
         schedules.forEach(scheduleStr => {
-            const col = getColumnIndex(scheduleStr)
-            const row = getRowIndex(scheduleStr)
-            
-            if (col!==-1 & row!== -1)
-            {
-                const cell = target_table.rows[row].cells[col]
+            const col = getColumnIndex(scheduleStr);
+            const row = getRowIndex(scheduleStr);
+
+            if (col !== -1 && row !== -1) {
+                const cell = target_table.rows[row].cells[col];
                 cell.innerHTML = `
-                <div style="background-color: #d1ecf1; padding: 5px; border-radius: 4px; font-size: 11px;">
+                <div style="background-color: #7ea8f7ff; padding: 5px; border-radius: 4px; font-size: 11px;">
                     <strong>${s.subject_name}</strong><br>
-                        ${s.class_code}
-                </div>
-                `
+                    ${s.class_code}<br>
+                    ${s.place}
+                </div>`;
             }
-        })
-        
-    })
+        });
+    });
 }
 
-function add_subject()
+function preprocess_time(str)
 {
-    let new_subject = new Subject(class_code_text, subject_name_text, stage_text, time_text, place_text)
+    const parts = str.split("Tuần hủy: ")
 
-    const result = JSON.parse(addSubject(new_subject))
+    const time = parts[0].replace(/\s-/g, "-")
+    const note = parts[1] ? parts[1]:""
+    const time_note = new TimeAndNote(time, note)
+    return time_note
+}
+
+function add_subject() {
+    let new_subject = new Subject(
+        class_code_input.value,
+        subject_name_input.value,
+        stage_input.value,
+        time_input.value,
+        place_input.value
+    );
+
     
-    alert(result["message"])
-    if (result["message"]==="Thành công")
-    {
-        renderSchedule()
-    }
 
-    console.log("Đã gọi hàm khi click")
+    const result = JSON.parse(addSubject(new_subject));
+    alert(result["message"]);
+
+    if (result["status"] === "Thành công") { // Sửa từ result["message"] thành result["status"]
+        renderSchedule();
+    }
 }
