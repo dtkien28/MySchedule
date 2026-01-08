@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Schedule Template</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="header-profile">
+        <div class="avatar-wrapper">
+            <img src="logo_TK.png" alt="Ảnh cá nhân" class="avatar-img">
+        </div>
+    </div>
+    <div class="input">
+        <div>
+            <label>Mã lớp</label>
+            <input id="class_code" type="text" placeholder="Nhập mã lớp">
+        </div>
+
+        <div>
+            <label>Tên môn</label>
+            <input id="subject_name" type="text" placeholder="Tên môn">
+        </div>
+
+        <div>
+            <label>Giai đoạn</label>
+            <input id="stage" type="text" placeholder="1-8, 11-18, 21-30, 33-40,...">
+        </div>
+
+        <div>
+            <label>Thời gian học</label>
+            <input id="time" type="text" placeholder="Thứ...+Tuần hủy">
+        </div>
+
+        <div>
+            <label>Địa điểm</label>
+            <input id="place" type="text" placeholder="Cơ sở học">
+        </div>
+
+        <button id="add_subject_btn">Thêm môn</button>
+        <button id="delete_subject_btn">Xóa môn</button>
+        <button id="edit_subject_btn">Sửa thông tin</button>
+        <button id="reload_schedule_btn">Reload</button>
+    </div>
+
+    <div class="schedule">
+        <label>Giai đoạn 1</label>
+        <table id="table-gd1">
+            <thead>
+                <tr>
+                    <th>Thời gian</th>
+                    <th>Thứ 2</th>
+                    <th>Thứ 3</th>
+                    <th>Thứ 4</th>
+                    <th>Thứ 5</th>
+                    <th>Thứ 6</th>
+                    <th>Thứ 7</th>
+                    <th>Chủ nhật</th>
+                </tr>
+                
+            </thead>
+
+            <tbody>
+                <tr>
+                    <td>7:00-9:00</td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+
+                <tr>
+                    <td>9:15-11:15</td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+
+                <tr>
+                    <td>13:00-15:00</td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+
+                <tr>
+                    <td>15:15-17:15</td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+
+                <tr>
+                    <td>17:45-20:45</td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <label>Giai đoạn 2</label>
+        <table id="table-gd2">
+            <thead>
+                <tr>
+                    <th>Thời gian</th>
+                    <th>Thứ 2</th>
+                    <th>Thứ 3</th>
+                    <th>Thứ 4</th>
+                    <th>Thứ 5</th>
+                    <th>Thứ 6</th>
+                    <th>Thứ 7</th>
+                    <th>Chủ nhật</th>
+                </tr>
+                
+            </thead>
+
+            <tbody>
+                <tr>
+                    <td>7:00-9:00</td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+
+                <tr>
+                    <td>9:15-11:15</td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+
+                <tr>
+                    <td>13:00-15:00</td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+
+                <tr>
+                    <td>15:15-17:15</td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+
+                <tr>
+                    <td>17:45-20:45</td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+            </tbody>
+        </table>
+        
+    </div>
+
+    <footer class="footer">
+        <div class="footer-content">
+            <p>&copy; 2026 Trung Kiên. All Rights Reserved.</p>
+            <p>Thiết kế bởi <a href="#">Đặng Kiên</a></p>
+        </div>
+    </footer>
+
+    <script type="module" src="../controllers/schedule_controller.js"></script>
+</body>
+</html>
