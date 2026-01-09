@@ -22,7 +22,7 @@ const time_input = document.getElementById('time')
 const place_input = document.getElementById('place')
 
 add_btn.addEventListener('click', add_subject)
-// delete_btn.addEventListener('click', )
+delete_btn.addEventListener('click', delete_subject)
 // edit_btn.addEventListener('click', )
 // reload_btn.addEventListener('click', )
 
@@ -104,6 +104,16 @@ function times(str)
 
 function renderSchedule()
 {
+    const allTables = [table_1, table_2];
+    allTables.forEach(table => {
+        for (let r = 0; r < table.rows.length; r++) {
+            // Chạy từ cell thứ 1 để giữ lại cột "Thời gian" (cell 0)
+            for (let c = 1; c < table.rows[r].cells.length; c++) {
+                table.rows[r].cells[c].innerHTML = "";
+            }
+        }
+    });
+
     for (let i=0; i<subject_list.length; i++)
     {
         for (let j=0; j<subject_list[i].time.length; j++)
@@ -175,4 +185,15 @@ function add_subject() {
     console.log(subject_list)
     console.log(preprocessed)
     console.log(studies)
+}
+
+
+function delete_subject()
+{
+    const response = deleteSubject(class_code_input.value.trim())
+    const result = (typeof response==="string") ? JSON.parse(response) : response
+    alert(result.message)
+    if (result.status === "Thành công") {
+        renderSchedule(); // Vẽ lại bảng sau khi đã xóa sạch dữ liệu cũ
+    }
 }

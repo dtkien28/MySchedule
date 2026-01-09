@@ -43,7 +43,7 @@ export function addSubject(s)
     return JSON.stringify(result)
 }
 
-export function deleteSubject(s)
+export function deleteSubject(class_code_text)
 {
     let result = {
         "status": "",
@@ -52,17 +52,17 @@ export function deleteSubject(s)
 
     for (let i = 0; i<subject_list.length; i++)
     {
-        if (s.class_code==subject_list[i].class_code)
+        if (class_code_text==subject_list[i].class_code)
         {
             subject_list.splice(i, 1)
             result["status"] = "Thành công"
-            result["message"] = `Đã xóa môn ${s.class_code} khỏi lịch`
+            result["message"] = `Đã xóa môn ${class_code_text} khỏi lịch`
             return JSON.stringify(result)
         }
     }
 
     result["status"] = "Lỗi"
-    result["message"] = `Không có mã môn ${s.class_code} trong lịch`
+    result["message"] = `Không có mã môn ${class_code_text} trong lịch`
     return JSON.stringify(result)
 }
 
