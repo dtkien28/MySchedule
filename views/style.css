@@ -87,12 +87,12 @@ button:nth-of-type(3):hover, button:nth-of-type(4):hover {
 
 /* Khu vực Thời khóa biểu (Schedule) */
 .schedule {
-    width: 95%;
-    max-width: 1100px;
+    width: 98%; /* Tăng từ 95% lên 98% để tận dụng không gian màn hình */
+    max-width: 1400px; /* Tăng từ 1100px lên 1400px hoặc lớn hơn tùy màn hình */
     background-color: white;
-    padding: 20px;
+    padding: 25px; /* Tăng padding bên trong khung */
     border-radius: 12px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
 }
 
 .schedule label {
@@ -108,9 +108,10 @@ button:nth-of-type(3):hover, button:nth-of-type(4):hover {
 
 /* Bảng (Table) */
 table {
+    table-layout: fixed;
     width: 100%;
     border-collapse: collapse;
-    margin-bottom: 30px;
+    margin-bottom: 40px;
     overflow: hidden;
     border-radius: 8px;
 }
@@ -120,8 +121,9 @@ th {
     background-color: #007bff; /* Nền xanh dương cho tiêu đề */
     color: white;
     font-weight: 600;
-    padding: 15px;
+    padding: 18px 10px;
     text-align: center;
+    font-size: 1.1rem;
 }
 
 /* Các ô dữ liệu */
@@ -129,7 +131,8 @@ td {
     border: 1px solid #dee2e6;
     padding: 12px;
     text-align: center;
-    height: 60px; /* Tăng chiều cao để dễ nhìn */
+    height: 60px;
+    overflow: hidden;
 }
 
 /* Dòng xen kẽ màu xanh cực nhạt để dễ theo dõi hàng */
@@ -147,7 +150,8 @@ td:first-child {
     font-weight: bold;
     background-color: #e9ecef;
     color: #495057;
-    width: 120px;
+    width: 140px;
+    font-size: 0.95rem;
 }
 
 /* Container chính cho phần đầu trang */
@@ -206,4 +210,33 @@ td:first-child {
 
 .footer-content a:hover {
     text-decoration: underline;
+}
+
+.subject-item {
+    background-color: #e7f3ff; /* Màu xanh nhạt làm nền */
+    border-left: 4px solid #007bff; /* Vạch kẻ bên trái để tạo điểm nhấn */
+    border-radius: 4px;
+    padding: 6px;
+    margin: 2px;
+    height: 100%; /* Chiếm hết chiều cao ô td */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    box-sizing: border-box; /* Đảm bảo padding không làm tăng kích thước */
+}
+
+.subject-item strong {
+    color: #004085;
+    font-size: 0.85rem;
+    display: block;
+    line-height: 1.2;
+    margin-bottom: 2px;
+}
+
+.subject-item small {
+    color: #555;
+    font-size: 0.75rem;
+    white-space: nowrap; /* Không cho xuống dòng mã lớp */
+    overflow: hidden;
+    text-overflow: ellipsis; /* Hiện dấu ... nếu mã lớp quá dài */
 }

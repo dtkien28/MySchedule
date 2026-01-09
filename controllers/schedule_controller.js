@@ -38,7 +38,8 @@ function getRowIndex(timeText) {
     {
         return [0, 1]
     }
-    return times.findIndex(time => timeText.includes(time));
+    const index = times.findIndex(time => timeText.includes(time));
+    return index !== -1 ? [index] : []
 }
 
 
