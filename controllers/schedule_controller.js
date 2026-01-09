@@ -1,20 +1,9 @@
 import { Subject, subject_list, addSubject, deleteSubject, editSubject } from "../models/subject.js"
 import { TimeAndNote } from "../models/time_and_cancel.js"
+import { StudySchedule } from "../models/study_schedule.js"
 
 const table_1 = document.getElementById("table-gd1").getElementsByTagName('tbody')[0]
 const table_2 = document.getElementById("table-gd2").getElementsByTagName('tbody')[0]
-
-const gd1_ca79 = table_1.rows[0]
-const gd1_ca911 = table_1.rows[1]
-const gd1_ca1315 = table_1.rows[2]
-const gd1_ca1517 = table_1.rows[3]
-const gd1_ca1721 = table_1.rows[4]
-
-const gd2_ca79 = table_2.rows[0]
-const gd2_ca911 = table_2.rows[1]
-const gd2_ca1315 = table_2.rows[2]
-const gd2_ca1517 = table_2.rows[3]
-const gd2_ca1721 = table_2.rows[4]
 
 const add_btn = document.getElementById('add_subject_btn')
 const delete_btn = document.getElementById('delete_subject_btn')
@@ -44,68 +33,145 @@ function getColumnIndex(dayText) {
 }
 
 function getRowIndex(timeText) {
-    const times = ["7:00 -9:00", "9:15 -11:15", "13:00 -15:00", "15:15 -17:15", "17:45 -20:45"];
+    const times = ["07:00 -09:00", "09:15 -11:15", "13:00 -15:00", "15:15 -17:15", "17:45 -20:45"];
+    if (timeText=="07:00 -11:15" || timeText=="07:00 -10:30")
+    {
+        return [0, 1]
+    }
     return times.findIndex(time => timeText.includes(time));
 }
 
-function renderSchedule() {
-    const clearTable = (tbody) => {
-        for (let r = 0; r < tbody.rows.length; r++) {
-            for (let c = 1; c < tbody.rows[r].cells.length; c++) {
-                tbody.rows[r].cells[c].innerHTML = "";
-            }
-        }
-    }
 
-    clearTable(table_1);
-    clearTable(table_2);
-
-    subject_list.forEach(s => {
-        const target_table = (s.stage === "1") ? table_1 : table_2;
-        const schedules = s.time.split(";");
-
-        schedules.forEach(scheduleStr => {
-            const col = getColumnIndex(scheduleStr);
-            const row = getRowIndex(scheduleStr);
-
-            if (col !== -1 && row !== -1) {
-                const cell = target_table.rows[row].cells[col];
-                cell.innerHTML = `
-                <div style="background-color: #7ea8f7ff; padding: 5px; border-radius: 4px; font-size: 11px;">
-                    <strong>${s.subject_name}</strong><br>
-                    ${s.class_code}<br>
-                    ${s.place}
-                </div>`;
-            }
-        });
-    });
-}
 
 function preprocess_time(str)
 {
-    const parts = str.split("Tuần hủy: ")
+    let count = 0
+    let have_cancel = false
+    let study_time = ""
+    let cancel = ""
+    for (let i =0; i<str.length; i++)
+    {
+        count++
+        if (str[i]=="u")
+        {
+            have_cancel=true
+            break
+        }
+    }
 
-    const time = parts[0].replace(/\s-/g, "-")
-    const note = parts[1] ? parts[1]:""
-    const time_note = new TimeAndNote(time, note)
-    return time_note
+    for (let i=0; i<count-2; i++)
+    {
+        study_time+=str[i]
+    }
+
+    if (have_cancel==true)
+    {
+        for (let i=count+8; i<str.length; i++)
+        {
+            cancel+=str[i]
+        }
+    }
+    console.log(study_time)
+    console.log(cancel)
+
+    const time_and_note = new TimeAndNote(study_time.trim(), cancel)
+    return time_and_note
+}
+
+function times(str)
+{
+    let study_list = []
+    
+    for (let i=0; i<str.length; i++)
+    {
+        if (str[i]=="T" || str[i]=="C")
+        {
+            let temp_day = str[i]+str[i+1]
+            let temp_time = ""
+            for (let j = i+4; j<i+16; j++)
+            {
+                temp_time+=str[j]
+            }
+            let temp_schedule = new StudySchedule(temp_day, temp_time)
+
+            study_list.push(temp_schedule)
+        }
+    }
+    return study_list
+}
+
+
+function renderSchedule()
+{
+    for (let i=0; i<subject_list.length; i++)
+    {
+        for (let j=0; j<subject_list[i].time.length; j++)
+        {
+            const col = getColumnIndex(subject_list[i].time[j].day)
+            const row = getRowIndex(subject_list[i].time[j].time)
+
+            for (let k=0; k<row.length; k++)
+            {
+                let target_table = []
+
+                if (subject_list[i].stage==="1")
+                {
+                    target_table.push(table_1)
+                }
+                else if (subject_list[i].stage==="2")
+                {
+                    target_table.push(table_2)
+                }
+                else
+                {
+                    target_table.push(table_1, table_2)
+                }
+
+                for (let h =0; h<target_table.length; h++)
+                {
+                    const cell = target_table[h].rows[row[k]].cells[col]
+                    cell.innerHTML = `
+                    <div class="subject-item">
+                        <strong>${subject_list[i].subject_name}</strong><br>
+                        <small>${subject_list[i].class_code}</small><br>
+                    </div>
+                    `
+                }
+            
+                
+            }
+
+            console.log("Row:", row, "Col:", col, "Time: ", subject_list[i].time[j].time, "Day: ", subject_list[i].time[j].day);
+
+            
+            
+        }
+    }
 }
 
 function add_subject() {
+    const preprocessed = preprocess_time(time_input.value);
+    const studies = times(preprocessed.time)
+
     let new_subject = new Subject(
-        class_code_input.value,
-        subject_name_input.value,
+        class_code_input.value.trim(),
+        subject_name_input.value.trim(),
         stage_input.value,
-        time_input.value,
-        place_input.value
+        studies,
+        preprocessed.note,
+        place_input.value.trim()
     );
 
-    
+    const response = addSubject(new_subject);
+    const result = (typeof response === 'string') ? JSON.parse(response) : response;
 
-    const result = JSON.parse(addSubject(new_subject));
-    alert(result["message"]);
+    alert(result.message);
 
-    if (result["status"] === "Thành công") { // Sửa từ result["message"] thành result["status"]
+    if (result.status === "Thành công") {
         renderSchedule();
     }
+
+    console.log(subject_list)
+    console.log(preprocessed)
+    console.log(studies)
 }

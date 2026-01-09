@@ -21,21 +21,21 @@ export function addSubject(s)
         "message": ""
     }
 
-    for (let i=0; i<subject_list.length; i++)
-    {
-        if (s.time==subject_list[i].time)
-        {
-            result["status"] = "Bị trùng"
-            result["message"] = `Môn ${s.subject_name} bị trùng thời gian với môn ${subject_list[i].subject_name} \n Thời gian trùng ${s.time}`
-            return JSON.stringify(result)
-        }
-        else if (s.class_code==subject_list[i].class_code)
-        {
-            result["status"] = "Bị trùng"
-            result["message"] = `Môn ${s.subject_name} đã có trong lịch`
-            return JSON.stringify(result)
-        }
-    }
+    // for (let i=0; i<subject_list.length; i++)
+    // {
+    //     if (s.time===subject_list[i].time)
+    //     {
+    //         result["status"] = "Bị trùng"
+    //         result["message"] = `Môn ${s.subject_name} bị trùng thời gian với môn ${subject_list[i].subject_name} \n Thời gian trùng ${s.time}`
+    //         return JSON.stringify(result)
+    //     }
+    //     else if (s.class_code==subject_list[i].class_code)
+    //     {
+    //         result["status"] = "Bị trùng"
+    //         result["message"] = `Môn ${s.subject_name} đã có trong lịch`
+    //         return JSON.stringify(result)
+    //     }
+    // }
     subject_list.push(s)
 
     result["status"] = "Thành công"
