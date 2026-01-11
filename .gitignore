@@ -7,6 +7,5 @@ Thumbs.db
 
 # Các file log
 *.log
-logo_TK.png
 # Nếu sau này bạn dùng thư viện Node.js
 node_modules/
