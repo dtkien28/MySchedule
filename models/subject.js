@@ -34,16 +34,23 @@ export function addSubject(s)
     //Lỗi trùng thời gian
     for (let i=0; i<subject_list.length; i++)
     {
-        for (let j=0; j<subject_list[i].time.length; j++)
+        if (subject_list[i].stage==s.stage)
         {
-            if (s.time[j].day==subject_list[i].time[j].day && s.time[j].time==subject_list[i].time[j].time)
+            for (let j=0; j<s.time.length; j++)
             {
-                result["status"] = "Lỗi"
-                result["message"] = "Môn học đã bị trùng"
-                return JSON.stringify(result)
+                for (let k=0; k<subject_list[i].time.length; k++)
+                {
+                    if (s.time[j].day==subject_list[i].time[k].day && s.time[j].time==subject_list[i].time[k].time)
+                    {
+                        result["status"] = "Lỗi"
+                        result["message"] = "Bị trùng thời gian, không thể thêm"
+                        return JSON.stringify(result)
+                    }
+                }
             }
         }
     }
+
 
     subject_list.push(s)
 
@@ -80,6 +87,25 @@ export function editSubject(s)
     let result = {
         "status": "",
         "message": ""
+    }
+
+    for (let i=0; i<subject_list.length; i++)
+    {
+        if (subject_list[i].stage==s.stage)
+        {
+            for (let j=0; j<s.time.length; j++)
+            {
+                for (let k=0; k<subject_list[i].time.length; k++)
+                {
+                    if (s.time[j].day==subject_list[i].time[k].day && s.time[j].time==subject_list[i].time[k].time)
+                    {
+                        result["status"] = "Lỗi"
+                        result["message"] = "Bị trùng thời gian, không thể sửa"
+                        return JSON.stringify(result)
+                    }
+                }
+            }
+        }
     }
 
     for (let i = 0; i<subject_list.length; i++)

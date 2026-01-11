@@ -174,8 +174,6 @@ function add_subject() {
     if (result.status === "Thành công") {
         renderSchedule();
     }
-
-    console.log(subject_list[0].time[0].day)
 }
 
 
