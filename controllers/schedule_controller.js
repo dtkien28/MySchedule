@@ -23,8 +23,8 @@ const place_input = document.getElementById('place')
 
 add_btn.addEventListener('click', add_subject)
 delete_btn.addEventListener('click', delete_subject)
-// edit_btn.addEventListener('click', )
-// reload_btn.addEventListener('click', )
+edit_btn.addEventListener('click', edit_subject)
+reload_btn.addEventListener('click', renderSchedule)
 
 
 function getColumnIndex(dayText) {
@@ -72,8 +72,6 @@ function preprocess_time(str)
             cancel+=str[i]
         }
     }
-    console.log(study_time)
-    console.log(cancel)
 
     const time_and_note = new TimeAndNote(study_time.trim(), cancel)
     return time_and_note
@@ -150,12 +148,7 @@ function renderSchedule()
                 }
             
                 
-            }
-
-            console.log("Row:", row, "Col:", col, "Time: ", subject_list[i].time[j].time, "Day: ", subject_list[i].time[j].day);
-
-            
-            
+            }            
         }
     }
 }
@@ -182,9 +175,7 @@ function add_subject() {
         renderSchedule();
     }
 
-    console.log(subject_list)
-    console.log(preprocessed)
-    console.log(studies)
+    console.log(subject_list[0].time[0].day)
 }
 
 
@@ -195,5 +186,28 @@ function delete_subject()
     alert(result.message)
     if (result.status === "Thành công") {
         renderSchedule(); // Vẽ lại bảng sau khi đã xóa sạch dữ liệu cũ
+    }
+}
+
+function edit_subject()
+{
+    const preprocessed = preprocess_time(time_input.value);
+    const studies = times(preprocessed.time)
+
+    let edited = new Subject(
+        class_code_input.value.trim(),
+        subject_name_input.value,
+        stage_input.value,
+        studies,
+        preprocessed.note,
+        place_input.value
+    )
+
+    const response = editSubject(edited)
+    const result = (typeof response==="string") ? JSON.parse(response) : response
+    alert(result.message)
+    if (result.status==="Thành công")
+    {
+        renderSchedule()
     }
 }

@@ -21,21 +21,30 @@ export function addSubject(s)
         "message": ""
     }
 
-    // for (let i=0; i<subject_list.length; i++)
-    // {
-    //     if (s.time===subject_list[i].time)
-    //     {
-    //         result["status"] = "Bị trùng"
-    //         result["message"] = `Môn ${s.subject_name} bị trùng thời gian với môn ${subject_list[i].subject_name} \n Thời gian trùng ${s.time}`
-    //         return JSON.stringify(result)
-    //     }
-    //     else if (s.class_code==subject_list[i].class_code)
-    //     {
-    //         result["status"] = "Bị trùng"
-    //         result["message"] = `Môn ${s.subject_name} đã có trong lịch`
-    //         return JSON.stringify(result)
-    //     }
-    // }
+    //Lỗi trùng môn
+    for (let i=0; i<subject_list.length; i++)
+    {
+        if (s.class_code==subject_list[i].class_code)
+        {
+            result["status"] = "Lỗi"
+            result["message"] = "Môn học đã có trong lịch, không thể thêm"
+            return JSON.stringify(result)
+        }
+    }
+    //Lỗi trùng thời gian
+    for (let i=0; i<subject_list.length; i++)
+    {
+        for (let j=0; j<subject_list[i].time.length; j++)
+        {
+            if (s.time[j].day==subject_list[i].time[j].day && s.time[j].time==subject_list[i].time[j].time)
+            {
+                result["status"] = "Lỗi"
+                result["message"] = "Môn học đã bị trùng"
+                return JSON.stringify(result)
+            }
+        }
+    }
+
     subject_list.push(s)
 
     result["status"] = "Thành công"
@@ -77,13 +86,15 @@ export function editSubject(s)
     {
         if (s.class_code==subject_list[i].class_code)
         {
+            console.log("có môn")
             subject_list[i].subject_name = s.subject_name
             subject_list[i].stage = s.stage
             subject_list[i].time = s.time
             subject_list[i].place = s.place
 
             result["status"] = "Thành công"
-            result["message"]= `Sửa thành công. Thông tin sau khi sửa\nMã môn: ${subject_list[i].class_code}\nTên môn: ${subject_list[i].subject_name}\nGiai đoạn: ${subject_list[i].stage}\nThời gian: ${subject_list[i].time}\nĐịa điểm: ${subject_list[i].place}`
+            result["message"]= `Sửa thành công. Thông tin sau khi sửa\nMã môn: ${subject_list[i].class_code}\nTên môn: ${subject_list[i].subject_name}`
+            return JSON.stringify(result)
         }
     }
 
