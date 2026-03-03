@@ -1,11 +1,8 @@
-# Các file hệ thống của hệ điều hành
 .DS_Store
 Thumbs.db
 
-# Thư mục cấu hình của trình soạn thảo (VS Code)
 .vscode/
 
 # Các file log
 *.log
-# Nếu sau này bạn dùng thư viện Node.js
-node_modules/
+node_modules/"venv310/" 
