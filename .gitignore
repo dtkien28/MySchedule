@@ -6,3 +6,7 @@ Thumbs.db
 # Các file log
 *.log
 node_modules/"venv310/" 
+
+__pycache__/
+venv/
+.env

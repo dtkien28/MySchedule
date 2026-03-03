@@ -1,4 +1,4 @@
-const API_URL = "http://127.0.0.1:5000/api";
+const API_URL = window.location.origin + "/api";
 
 const table_1 = document.getElementById("table-gd1").getElementsByTagName('tbody')[0]
 const table_2 = document.getElementById("table-gd2").getElementsByTagName('tbody')[0]

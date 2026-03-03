@@ -1,4 +1,3 @@
-# File: app.py
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import json
@@ -6,8 +5,12 @@ import json
 from models.subject import Subject, add_subject, delete_subject, edit_subject, subject_list
 from models.study_schedule import StudySchedule
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='static', template_folder='templates')
 CORS(app)
+
+@app.route('/')
+def index():
+    return send_from_directory('templates', 'index.html')
 
 
 @app.route('/api/subjects', methods=['GET'])
