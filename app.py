@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 import json
 
+
 from models.subject import Subject, add_subject, delete_subject, edit_subject, subject_list
 from models.study_schedule import StudySchedule
 
