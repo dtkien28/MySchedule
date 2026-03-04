@@ -8,5 +8,7 @@ Thumbs.db
 node_modules/"venv310/" 
 
 __pycache__/
+
 venv/
+
 .env
