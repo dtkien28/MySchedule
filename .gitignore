@@ -9,6 +9,6 @@ node_modules/"venv310/"
 
 __pycache__/
 
-venv/
+venv310/
 
 .env
