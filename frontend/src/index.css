@@ -1,0 +1,336 @@
+:root {
+  --primary-color: #0F2864;
+  --primary-hover: #1E293B;
+  --secondary-color: #00D2FF;
+  --bg-color: #f8fafc;
+  --card-bg: #ffffff;
+  --text-main: #1E293B;
+  --text-muted: #64748b;
+  --border-color: #e2e8f0;
+  --sidebar-width: 250px;
+}
+
+body.dark-theme {
+  --primary-color: #0f172a;
+  --primary-hover: #1e293b;
+  --secondary-color: #38bdf8;
+  --bg-color: #1e293b;
+  --card-bg: #334155;
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --border-color: #475569;
+}
+
+body.dark-theme::before {
+  content: \'\';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.65);
+  z-index: -1;
+  pointer-events: none;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-main);
+}
+
+.app-container {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.main-content {
+  flex: 1;
+  padding: 30px;
+  overflow-y: auto;
+  background-color: transparent;
+}
+
+/* Sidebar */
+.sidebar {
+  width: 250px;
+  background-color: var(--primary-color);
+  color: white;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  margin: 10px;
+  border-radius: 12px;
+}
+
+.sidebar-logo {
+  padding: 20px;
+  font-size: 1.5rem;
+  font-weight: bold;
+  text-align: center;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  color: var(--secondary-color);
+}
+
+.sidebar-nav {
+  flex: 1;
+  padding: 20px 0;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  padding: 15px 20px;
+  color: rgba(255,255,255,0.8);
+  text-decoration: none;
+  gap: 15px;
+  transition: 0.2s;
+}
+
+.nav-item:hover, .nav-item.active {
+  background-color: rgba(255,255,255,0.1);
+  color: var(--secondary-color);
+  border-right: 4px solid var(--secondary-color);
+}
+
+.sidebar-footer {
+  padding: 20px;
+  border-top: 1px solid rgba(255,255,255,0.1);
+}
+
+/* General Layout */
+.card {
+  background: var(--card-bg);
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+  border: 1px solid var(--border-color);
+  margin-bottom: 24px;
+}
+
+.btn {
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-primary {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: var(--primary-hover);
+}
+
+.btn-secondary {
+  background-color: var(--secondary-color);
+  color: var(--text-main);
+}
+
+.input-field, .form-select {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  margin-bottom: 15px;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+/* Time Grid */
+.time-grid-container {
+  display: flex;
+  border: 1px solid var(--border-color);
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.time-grid-hours {
+  width: 60px;
+  background: var(--bg-color);
+  border-right: 1px solid var(--border-color);
+}
+
+.hour-label {
+  height: 60px; /* 1 hour = 60px */
+  text-align: right;
+  padding-right: 8px;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  box-sizing: border-box;
+  position: relative;
+}
+.hour-label span {
+  position: absolute;
+  top: -8px;
+  right: 8px;
+}
+
+.time-grid-days {
+  display: flex;
+  flex: 1;
+  position: relative;
+}
+
+.day-col {
+  flex: 1;
+  border-right: 1px solid var(--border-color);
+  position: relative;
+}
+
+.day-col:last-child {
+  border-right: none;
+}
+
+.day-header {
+  text-align: center;
+  padding: 10px 0;
+  font-weight: bold;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-color);
+  height: 40px;
+  box-sizing: border-box;
+}
+
+.day-body {
+  position: relative;
+  height: 900px; /* 15 hours * 60px (e.g. 06:00 to 21:00) */
+  background-image: linear-gradient(to bottom, var(--border-color) 1px, transparent 1px);
+  background-size: 100% 60px;
+}
+
+.block-item {
+  position: absolute;
+  left: 2%;
+  width: 96%;
+  border-radius: 6px;
+  padding: 6px;
+  font-size: 0.75rem;
+  color: white;
+  box-sizing: border-box;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.block-study {
+  background-color: var(--primary-color);
+  border-left: 4px solid var(--secondary-color);
+}
+
+.block-work {
+  background-color: #f59e0b;
+  border-left: 4px solid #d97706;
+}
+
+.block-busy {
+  background-color: var(--text-muted);
+  border-left: 4px solid #475569;
+}
+
+.block-task-todo {
+  background-color: #eab308;
+  border-left: 4px solid #ca8a04;
+}
+
+.block-task-doing {
+  background-color: #3b82f6;
+  border-left: 4px solid #2563eb;
+}
+
+.block-task-done {
+  background-color: #22c55e;
+  border-left: 4px solid #16a34a;
+}
+
+.block-group-meeting {
+  background-color: #a855f7;
+  border-left: 4px solid #9333ea;
+  color: white;
+}
+
+/* Kanban */
+.chatbot-bubble {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  width: 60px;
+  height: 60px;
+  background-color: var(--secondary-color);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary-color);
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  transition: 0.3s;
+}
+.chatbot-bubble:hover {
+  transform: scale(1.1);
+}
+
+.chatbot-window {
+  position: fixed;
+  bottom: 100px;
+  right: 30px;
+  width: 350px;
+  height: 450px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.chatbot-header {
+  background: var(--primary-color);
+  color: white;
+  padding: 15px;
+  font-weight: bold;
+  display: flex;
+  justify-content: space-between;
+}
+.chatbot-body {
+  flex: 1;
+  padding: 15px;
+  background: var(--bg-color);
+  overflow-y: auto;
+}
+.chatbot-footer {
+  padding: 10px;
+  background: white;
+  display: flex;
+  gap: 10px;
+  border-top: 1px solid var(--border-color);
+}
+
+/* Toast */
+.toast-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+}
+.toast {
+  background: var(--primary-color);
+  color: white;
+  padding: 15px 20px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  animation: slideIn 0.3s ease-out;
+}
+@keyframes slideIn {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}

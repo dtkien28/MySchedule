@@ -1,19 +1,25 @@
-.DS_Store
-Thumbs.db
-
-.vscode/
-
-# Các file log
-*.log
-node_modules/"venv310/" 
-
-__pycache__/
-
 # Environments
 .env
-.venv
-env/
+.env.local
+
+# Virtual environments
+venv310/
 venv/
-ENV/
-env.bak/
-venv.bak/
+env/
+
+# Dependencies
+node_modules/
+__pycache__/
+
+# Database & Data
+*.db
+*.sqlite
+*.sqlite3
+subjects.json
+
+# OS files
+.DS_Store
+
+# Build files
+dist/
+build/
