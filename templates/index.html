@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Schedule Template</title>
+    <title>Schedule Template DTU</title>
     <link rel="stylesheet" href="/static/views/style.css">
     <link rel="icon" type="image/x-icon" href="/static/views/favicon.ico">
 </head>
@@ -14,193 +14,113 @@
             <img src="/static/views/logo_TK.png" alt="Ảnh cá nhân" class="avatar-img">
         </div>
     </div>
-    <div class="input">
-        <div>
-            <label>Mã lớp</label>
-            <input id="class_code" type="text" placeholder="Nhập mã lớp">
-        </div>
 
-        <div>
-            <label>Tên môn</label>
-            <input id="subject_name" type="text" placeholder="Tên môn">
+    <!-- Smart Paste Section -->
+    <div class="input form-container">
+        <h2 class="form-title">Dán dữ liệu đăng ký (DTU Portal)</h2>
+        <div class="form-group full-width">
+            <textarea id="smart_paste_box" rows="5" class="form-textarea" placeholder="Dán dòng dữ liệu copy từ trang đăng ký tín chỉ vào đây...&#10;Ví dụ: CMU-SE 303 SAIS    Software Testing    LEC    43--49    ..."></textarea>
         </div>
-
-        <div>
-            <label>Giai đoạn</label>
-            <input id="stage" type="text" placeholder="Chỉ có thể là 1, 2 hoặc 12">
+        <div class="form-actions">
+            <button id="btn_parse_data" class="btn btn-primary">Phân tích dữ liệu</button>
         </div>
-
-        <div>
-            <label>Thời gian học</label>
-            <input id="time" type="text" placeholder="Thứ...+Tuần hủy">
-        </div>
-
-        <div>
-            <label>Địa điểm</label>
-            <input id="place" type="text" placeholder="Cơ sở học">
-        </div>
-
-        <button id="add_subject_btn">Thêm môn</button>
-        <button id="delete_subject_btn">Xóa môn</button>
-        <button id="edit_subject_btn">Sửa thông tin</button>
-        <button id="reload_schedule_btn">Reload</button>
     </div>
 
-    <div class="schedule">
-        <label>Giai đoạn 1</label>
-        <table id="table-gd1">
-            <thead>
-                <tr>
-                    <th>Thời gian</th>
-                    <th>Thứ 2</th>
-                    <th>Thứ 3</th>
-                    <th>Thứ 4</th>
-                    <th>Thứ 5</th>
-                    <th>Thứ 6</th>
-                    <th>Thứ 7</th>
-                    <th>Chủ nhật</th>
-                </tr>
-                
-            </thead>
-
-            <tbody>
-                <tr>
-                    <td>7:00-9:00</td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                </tr>
-
-                <tr>
-                    <td>9:15-11:15</td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                </tr>
-
-                <tr>
-                    <td>13:00-15:00</td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                </tr>
-
-                <tr>
-                    <td>15:15-17:15</td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                </tr>
-
-                <tr>
-                    <td>17:45-20:45</td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                </tr>
-            </tbody>
-        </table>
-
-        <label>Giai đoạn 2</label>
-        <table id="table-gd2">
-            <thead>
-                <tr>
-                    <th>Thời gian</th>
-                    <th>Thứ 2</th>
-                    <th>Thứ 3</th>
-                    <th>Thứ 4</th>
-                    <th>Thứ 5</th>
-                    <th>Thứ 6</th>
-                    <th>Thứ 7</th>
-                    <th>Chủ nhật</th>
-                </tr>
-                
-            </thead>
-
-            <tbody>
-                <tr>
-                    <td>7:00-9:00</td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                </tr>
-
-                <tr>
-                    <td>9:15-11:15</td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                </tr>
-
-                <tr>
-                    <td>13:00-15:00</td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                </tr>
-
-                <tr>
-                    <td>15:15-17:15</td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                </tr>
-
-                <tr>
-                    <td>17:45-20:45</td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                </tr>
-            </tbody>
-        </table>
+    <!-- Edit Form Section -->
+    <div class="input form-container">
+        <h2 class="form-title">Thông tin môn học (Preview & Edit)</h2>
         
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="class_code">Mã lớp <span class="required">*</span></label>
+                <input id="class_code" type="text" placeholder="Ví dụ: CMU-SE 303 SAIS">
+            </div>
+
+            <div class="form-group">
+                <label for="subject_name">Tên môn <span class="required">*</span></label>
+                <input id="subject_name" type="text" placeholder="Ví dụ: Software Testing">
+            </div>
+
+            <div class="form-group">
+                <label for="type">Loại hình</label>
+                <input id="type" type="text" placeholder="Ví dụ: LEC">
+            </div>
+            
+            <div class="form-group">
+                <label for="start_week">Từ tuần <span class="required">*</span></label>
+                <input id="start_week" type="number" min="1" max="52" value="1" class="form-select">
+            </div>
+            <div class="form-group">
+                <label for="end_week">Đến tuần <span class="required">*</span></label>
+                <input id="end_week" type="number" min="1" max="52" value="52" class="form-select">
+            </div>
+        </div>
+
+        <div class="form-group full-width">
+            <label>Các buổi học trong tuần <span class="required">*</span></label>
+            <div id="schedule_inputs_container" class="schedule-inputs">
+                <!-- Rows will be injected here -->
+            </div>
+            <button type="button" id="btn_add_schedule_row" class="btn-text">+ Thêm buổi học</button>
+        </div>
+
+        <div class="form-actions">
+            <button id="add_subject_btn" class="btn btn-primary">Thêm</button>
+            <button id="edit_subject_btn" class="btn btn-secondary">Cập nhật (nếu đang sửa)</button>
+            <button id="delete_subject_btn" class="btn btn-danger">Xóa</button>
+        </div>
+    </div>
+
+    <!-- Schedule View Section -->
+    <div class="schedule">
+        <div class="week-navigation">
+            <button id="btn_prev_week" class="btn btn-outline">&lt; Tuần trước</button>
+            <h2 id="current_week_label" class="week-title">Tuần 43</h2>
+            <button id="btn_next_week" class="btn btn-outline">Tuần sau &gt;</button>
+        </div>
+
+        <table id="table-schedule">
+            <thead>
+                <tr>
+                    <th>Ca học</th>
+                    <th>Thứ 2</th>
+                    <th>Thứ 3</th>
+                    <th>Thứ 4</th>
+                    <th>Thứ 5</th>
+                    <th>Thứ 6</th>
+                    <th>Thứ 7</th>
+                    <th>Chủ nhật</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Ca 1 (07:00 - 09:00)</td>
+                    <td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+                </tr>
+                <tr>
+                    <td>Ca 2 (09:15 - 11:15)</td>
+                    <td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+                </tr>
+                <tr>
+                    <td>Ca 3 (13:00 - 15:00)</td>
+                    <td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+                </tr>
+                <tr>
+                    <td>Ca 4 (15:15 - 17:15)</td>
+                    <td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+                </tr>
+                <tr>
+                    <td>Ca 5 (17:45 - 20:45)</td>
+                    <td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+                </tr>
+            </tbody>
+        </table>
     </div>
 
     <footer class="footer">
         <div class="footer-content">
             <p>&copy; 2026 Trung Kiên. All Rights Reserved.</p>
-            <p>Thiết kế bởi <a href="#">Đặng Kiên</a></p>
+            <p>Thiết kế bởi Đặng Kiên</p>
         </div>
     </footer>
 
