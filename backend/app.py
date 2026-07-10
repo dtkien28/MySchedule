@@ -6,7 +6,6 @@ from dotenv import load_dotenv
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_talisman import Talisman
-import sqlite3
 import jwt
 import bcrypt
 import datetime
@@ -81,21 +80,21 @@ def register():
     cursor = conn.cursor()
     try:
         # Check if user exists and is unverified, then delete them to allow re-registration
-        cursor.execute("SELECT id, is_verified FROM users WHERE username = ? OR email = ?", (username, email))
+        cursor.execute("SELECT id, is_verified FROM users WHERE username = %s OR email = %s", (username, email))
         existing_user = cursor.fetchone()
         if existing_user:
             if existing_user['is_verified'] == 1:
                 return jsonify({'message': 'Username or email already exists'}), 400
             else:
-                cursor.execute("DELETE FROM users WHERE id = ?", (existing_user['id'],))
+                cursor.execute("DELETE FROM users WHERE id = %s", (existing_user['id'],))
                 
-        cursor.execute("INSERT INTO users (username, email, display_name, password_hash, is_verified) VALUES (?, ?, ?, ?, 0)", (username, email, display_name, hashed.decode('utf-8')))
-        user_id = cursor.lastrowid
+        cursor.execute("INSERT INTO users (username, email, display_name, password_hash, is_verified) VALUES (%s, %s, %s, %s, 0) RETURNING id", (username, email, display_name, hashed.decode('utf-8')))
+        user_id = cursor.fetchone()['id']
         
         # Generate OTP
         otp_code = str(random.randint(100000, 999999))
         expires_at = datetime.datetime.utcnow() + datetime.timedelta(minutes=15)
-        cursor.execute("INSERT INTO otps (user_id, code, expires_at) VALUES (?, ?, ?)", (user_id, otp_code, expires_at))
+        cursor.execute("INSERT INTO otps (user_id, code, expires_at) VALUES (%s, %s, %s)", (user_id, otp_code, expires_at))
         conn.commit()
         
         # Send Email
@@ -132,17 +131,18 @@ def verify_otp():
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
-        cursor.execute("SELECT * FROM otps WHERE user_id = ? ORDER BY id DESC LIMIT 1", (user_id,))
+        cursor.execute("SELECT * FROM otps WHERE user_id = %s ORDER BY id DESC LIMIT 1", (user_id,))
         otp = cursor.fetchone()
         
         if not otp or otp['code'] != str(code):
             return jsonify({'message': 'Mã OTP không chính xác'}), 400
             
-        if datetime.datetime.strptime(otp['expires_at'], '%Y-%m-%d %H:%M:%S.%f') < datetime.datetime.utcnow():
+        expires_at_dt = otp['expires_at'] if isinstance(otp['expires_at'], datetime.datetime) else datetime.datetime.strptime(otp['expires_at'], '%Y-%m-%d %H:%M:%S.%f')
+        if expires_at_dt < datetime.datetime.utcnow():
             return jsonify({'message': 'Mã OTP đã hết hạn'}), 400
             
-        cursor.execute("UPDATE users SET is_verified = 1 WHERE id = ?", (user_id,))
-        cursor.execute("DELETE FROM otps WHERE user_id = ?", (user_id,))
+        cursor.execute("UPDATE users SET is_verified = 1 WHERE id = %s", (user_id,))
+        cursor.execute("DELETE FROM otps WHERE user_id = %s", (user_id,))
         conn.commit()
         return jsonify({'message': 'Xác thực thành công, bạn có thể đăng nhập'})
     finally:
@@ -157,7 +157,8 @@ def login():
     
     conn = get_db_connection()
     cursor = conn.cursor()
-    user = cursor.execute("SELECT * FROM users WHERE username = ?", (username,)).fetchone()
+    cursor.execute("SELECT * FROM users WHERE username = %s", (username,))
+    user = cursor.fetchone()
     conn.close()
     
     if user and bcrypt.checkpw(password.encode('utf-8'), user['password_hash'].encode('utf-8')):
@@ -171,7 +172,9 @@ def login():
         
         # Calculate Streak
         today = datetime.datetime.utcnow().date()
-        last_active = datetime.datetime.strptime(user['last_active_date'], '%Y-%m-%d').date() if user['last_active_date'] else None
+        last_active = None
+        if user['last_active_date']:
+            last_active = user['last_active_date'] if isinstance(user['last_active_date'], datetime.date) else datetime.datetime.strptime(user['last_active_date'], '%Y-%m-%d').date()
         
         streak = user['streak']
         if last_active == today - datetime.timedelta(days=1):
@@ -181,7 +184,7 @@ def login():
             
         update_conn = get_db_connection()
         update_cursor = update_conn.cursor()
-        update_cursor.execute("UPDATE users SET streak = ?, last_active_date = ? WHERE id = ?", (streak, today.isoformat(), user['id']))
+        update_cursor.execute("UPDATE users SET streak = %s, last_active_date = %s WHERE id = %s", (streak, today.isoformat(), user['id']))
         update_conn.commit()
         update_conn.close()
         
@@ -224,7 +227,7 @@ def parse_dtu_string(raw_text: str):
         time_regex = r'(T[2-7]|CN)\s*:\s*(\d{1,2}[:h]\d{2})\s*-\s*(\d{1,2}[:h]\d{2})'
         
         for line in lines:
-            week_match = re.search(r'(?:\b|^)(\d+)\s*--\s*(\d+)', line)
+            week_match = re.search(r'(%s:\b|^)(\d+)\s*--\s*(\d+)', line)
             if week_match:
                 start_week = int(week_match.group(1))
                 end_week = int(week_match.group(2))
@@ -292,12 +295,12 @@ def api_parse_subject(current_user_id):
 def get_subjects(current_user_id):
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute('SELECT * FROM subjects WHERE user_id = ?', (current_user_id,))
+    cursor.execute('SELECT * FROM subjects WHERE user_id = %s', (current_user_id,))
     subs = cursor.fetchall()
     
     result = []
     for s in subs:
-        cursor.execute('SELECT * FROM study_times WHERE subject_id = ?', (s['id'],))
+        cursor.execute('SELECT * FROM study_times WHERE subject_id = %s', (s['id'],))
         times = cursor.fetchall()
         
         result.append({
@@ -328,10 +331,10 @@ def add_subject(current_user_id):
     
     cursor.execute('''
         INSERT INTO subjects (user_id, class_code, subject_name, type, start_week, end_week)
-        VALUES (?, ?, ?, ?, ?, ?)
+        VALUES (%s, %s, %s, %s, %s, %s) RETURNING id
     ''', (current_user_id, data['class_code'], data['subject_name'], data.get('type', ''), int(data['start_week']), int(data['end_week'])))
     
-    subject_id = cursor.lastrowid
+    subject_id = cursor.fetchone()['id']
     
     for t in data.get('time', []):
         time_parts = t['time'].split('-')
@@ -340,7 +343,7 @@ def add_subject(current_user_id):
         
         cursor.execute('''
             INSERT INTO study_times (subject_id, day, time_start, time_end, room, cancel_weeks)
-            VALUES (?, ?, ?, ?, ?, ?)
+            VALUES (%s, %s, %s, %s, %s, %s)
         ''', (subject_id, t['day'], t_start, t_end, t.get('room', ''), json.dumps(t.get('cancel_weeks', []))))
         
     conn.commit()
@@ -361,12 +364,12 @@ def edit_subject(current_user_id):
     # Update main table
     cursor.execute('''
         UPDATE subjects 
-        SET class_code=?, subject_name=?, type=?, start_week=?, end_week=?
-        WHERE id=? AND user_id=?
+        SET class_code=%s, subject_name=%s, type=%s, start_week=%s, end_week=%s
+        WHERE id=%s AND user_id=%s
     ''', (data['class_code'], data['subject_name'], data.get('type', ''), int(data['start_week']), int(data['end_week']), subject_id, current_user_id))
     
     # Delete old times
-    cursor.execute('DELETE FROM study_times WHERE subject_id=?', (subject_id,))
+    cursor.execute('DELETE FROM study_times WHERE subject_id=%s', (subject_id,))
     
     # Insert new times
     for t in data.get('time', []):
@@ -376,7 +379,7 @@ def edit_subject(current_user_id):
         
         cursor.execute('''
             INSERT INTO study_times (subject_id, day, time_start, time_end, room, cancel_weeks)
-            VALUES (?, ?, ?, ?, ?, ?)
+            VALUES (%s, %s, %s, %s, %s, %s)
         ''', (subject_id, t['day'], t_start, t_end, t.get('room', ''), json.dumps(t.get('cancel_weeks', []))))
         
     conn.commit()
@@ -388,7 +391,7 @@ def edit_subject(current_user_id):
 def delete_subject(current_user_id, id):
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute('DELETE FROM subjects WHERE id = ? AND user_id = ?', (id, current_user_id))
+    cursor.execute('DELETE FROM subjects WHERE id = %s AND user_id = %s', (id, current_user_id))
     conn.commit()
     conn.close()
     return jsonify({'message': 'Deleted'})
@@ -402,7 +405,7 @@ def handle_works(current_user_id):
     cursor = conn.cursor()
     
     if request.method == 'GET':
-        cursor.execute('SELECT * FROM work_schedules WHERE user_id = ?', (current_user_id,))
+        cursor.execute('SELECT * FROM work_schedules WHERE user_id = %s', (current_user_id,))
         works = cursor.fetchall()
         conn.close()
         return jsonify([dict(w) for w in works])
@@ -411,7 +414,7 @@ def handle_works(current_user_id):
         data = request.json
         cursor.execute('''
             INSERT INTO work_schedules (user_id, title, day, time_start, time_end)
-            VALUES (?, ?, ?, ?, ?)
+            VALUES (%s, %s, %s, %s, %s)
         ''', (current_user_id, data['title'], data['day'], data['time_start'], data['time_end']))
         conn.commit()
         conn.close()
@@ -422,7 +425,7 @@ def handle_works(current_user_id):
 def delete_work(current_user_id, id):
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute('DELETE FROM work_schedules WHERE id = ? AND user_id = ?', (id, current_user_id))
+    cursor.execute('DELETE FROM work_schedules WHERE id = %s AND user_id = %s', (id, current_user_id))
     conn.commit()
     conn.close()
     return jsonify({'message': 'Deleted'})
@@ -439,7 +442,7 @@ def handle_groups(current_user_id):
         cursor.execute('''
             SELECT g.id, g.name FROM groups g 
             JOIN group_members gm ON gm.group_id = g.id 
-            WHERE gm.user_id = ?
+            WHERE gm.user_id = %s
         ''', (current_user_id,))
         groups = cursor.fetchall()
         conn.close()
@@ -447,9 +450,9 @@ def handle_groups(current_user_id):
         
     if request.method == 'POST':
         name = request.json.get('name')
-        cursor.execute('INSERT INTO groups (name, owner_id) VALUES (?, ?)', (name, current_user_id))
-        g_id = cursor.lastrowid
-        cursor.execute('INSERT INTO group_members (group_id, user_id) VALUES (?, ?)', (g_id, current_user_id))
+        cursor.execute('INSERT INTO groups (name, owner_id) VALUES (%s, %s) RETURNING id', (name, current_user_id))
+        g_id = cursor.fetchone()['id']
+        cursor.execute('INSERT INTO group_members (group_id, user_id) VALUES (%s, %s)', (g_id, current_user_id))
         conn.commit()
         conn.close()
         return jsonify({'message': 'Group created', 'id': g_id})
@@ -461,16 +464,20 @@ def add_group_member(current_user_id, group_id):
     conn = get_db_connection()
     cursor = conn.cursor()
     
-    g = cursor.execute('SELECT owner_id FROM groups WHERE id = ?', (group_id,)).fetchone()
+    cursor.execute('SELECT owner_id FROM groups WHERE id = %s', (group_id,))
+    
+    g = cursor.fetchone()
     if not g or g['owner_id'] != current_user_id:
         return jsonify({'error': 'Unauthorized'}), 403
         
-    target_user = cursor.execute('SELECT id FROM users WHERE username = ?', (target_username,)).fetchone()
+    cursor.execute('SELECT id FROM users WHERE username = %s', (target_username,))
+        
+    target_user = cursor.fetchone()
     if not target_user:
         return jsonify({'error': 'User not found'}), 404
         
     try:
-        cursor.execute('INSERT INTO group_members (group_id, user_id) VALUES (?, ?)', (group_id, target_user['id']))
+        cursor.execute('INSERT INTO group_members (group_id, user_id) VALUES (%s, %s)', (group_id, target_user['id']))
         conn.commit()
     except:
         pass
@@ -483,18 +490,24 @@ def get_group_schedule(current_user_id, group_id):
     conn = get_db_connection()
     cursor = conn.cursor()
     
-    mem = cursor.execute('SELECT * FROM group_members WHERE group_id = ? AND user_id = ?', (group_id, current_user_id)).fetchone()
+    cursor.execute('SELECT * FROM group_members WHERE group_id = %s AND user_id = %s', (group_id, current_user_id))
+    
+    mem = cursor.fetchone()
     if not mem:
         return jsonify({'error': 'Not in group'}), 403
         
-    members = cursor.execute('SELECT u.id, u.username FROM group_members gm JOIN users u ON gm.user_id = u.id WHERE gm.group_id = ?', (group_id,)).fetchall()
+    cursor.execute('SELECT u.id, u.username FROM group_members gm JOIN users u ON gm.user_id = u.id WHERE gm.group_id = %s', (group_id,))
+        
+    members = cursor.fetchall()
     
     schedule_data = []
     
     for m in members:
-        subs = cursor.execute('SELECT id, start_week, end_week FROM subjects WHERE user_id = ?', (m['id'],)).fetchall()
+        cursor.execute('SELECT id, start_week, end_week FROM subjects WHERE user_id = %s', (m['id'],))
+        subs = cursor.fetchall()
         for s in subs:
-            times = cursor.execute('SELECT day, time_start, time_end, cancel_weeks FROM study_times WHERE subject_id = ?', (s['id'],)).fetchall()
+            cursor.execute('SELECT day, time_start, time_end, cancel_weeks FROM study_times WHERE subject_id = %s', (s['id'],))
+            times = cursor.fetchall()
             for t in times:
                 schedule_data.append({
                     "user_id": m['id'],
@@ -508,7 +521,9 @@ def get_group_schedule(current_user_id, group_id):
                     "cancel_weeks": json.loads(t['cancel_weeks']) if t['cancel_weeks'] else []
                 })
         
-        works = cursor.execute('SELECT day, time_start, time_end FROM work_schedules WHERE user_id = ?', (m['id'],)).fetchall()
+        cursor.execute('SELECT day, time_start, time_end FROM work_schedules WHERE user_id = %s', (m['id'],))
+        
+        works = cursor.fetchall()
         for w in works:
             schedule_data.append({
                 "user_id": m['id'],
@@ -534,14 +549,15 @@ def create_group_meeting(current_user_id, group_id):
     cursor = conn.cursor()
     
     # Check if user is in group
-    member = cursor.execute('SELECT * FROM group_members WHERE group_id = ? AND user_id = ?', (group_id, current_user_id)).fetchone()
+    cursor.execute('SELECT * FROM group_members WHERE group_id = %s AND user_id = %s', (group_id, current_user_id))
+    member = cursor.fetchone()
     if not member:
         conn.close()
         return jsonify({'error': 'Not authorized'}), 403
         
     cursor.execute('''
         INSERT INTO group_meetings (group_id, title, scheduled_day, time_start, time_end)
-        VALUES (?, ?, ?, ?, ?)
+        VALUES (%s, %s, %s, %s, %s)
     ''', (group_id, data.get('title'), data.get('scheduled_day'), data.get('time_start'), data.get('time_end')))
     conn.commit()
     conn.close()
@@ -553,13 +569,14 @@ def get_user_meetings(current_user_id):
     conn = get_db_connection()
     cursor = conn.cursor()
     # Get meetings for all groups the user is a part of
-    meetings = cursor.execute('''
+    cursor.execute('''
         SELECT m.*, g.name as group_name 
         FROM group_meetings m
         JOIN groups g ON m.group_id = g.id
         JOIN group_members gm ON g.id = gm.group_id
-        WHERE gm.user_id = ?
-    ''', (current_user_id,)).fetchall()
+        WHERE gm.user_id = %s
+    ''', (current_user_id,))
+    meetings = cursor.fetchall()
     conn.close()
     return jsonify([dict(m) for m in meetings])
 
@@ -572,7 +589,8 @@ def handle_habits(current_user_id):
     
     if request.method == 'GET':
         date = request.args.get('date', datetime.date.today().isoformat())
-        h = cursor.execute('SELECT * FROM habits WHERE user_id = ? AND date = ?', (current_user_id, date)).fetchone()
+        cursor.execute('SELECT * FROM habits WHERE user_id = %s AND date = %s', (current_user_id, date))
+        h = cursor.fetchone()
         conn.close()
         if h:
             return jsonify(dict(h))
@@ -583,7 +601,7 @@ def handle_habits(current_user_id):
         date = data.get('date', datetime.date.today().isoformat())
         cursor.execute('''
             INSERT INTO habits (user_id, date, attended_class, tasks_completed)
-            VALUES (?, ?, ?, ?)
+            VALUES (%s, %s, %s, %s)
             ON CONFLICT(user_id, date) DO UPDATE SET 
             attended_class = excluded.attended_class,
             tasks_completed = excluded.tasks_completed
@@ -601,7 +619,7 @@ def handle_attendance(current_user_id):
     
     if request.method == 'GET':
         week = request.args.get('week', type=int)
-        cursor.execute('SELECT * FROM attendance WHERE user_id = ? AND week = ?', (current_user_id, week))
+        cursor.execute('SELECT * FROM attendance WHERE user_id = %s AND week = %s', (current_user_id, week))
         records = cursor.fetchall()
         conn.close()
         return jsonify([dict(r) for r in records])
@@ -615,7 +633,7 @@ def handle_attendance(current_user_id):
         
         cursor.execute('''
             INSERT INTO attendance (user_id, subject_id, week, day, attended)
-            VALUES (?, ?, ?, ?, ?)
+            VALUES (%s, %s, %s, %s, %s)
             ON CONFLICT(user_id, subject_id, week, day) DO UPDATE SET 
             attended = excluded.attended
         ''', (current_user_id, subject_id, week, day, attended))
@@ -631,7 +649,7 @@ def handle_tasks(current_user_id):
     cursor = conn.cursor()
     
     if request.method == 'GET':
-        cursor.execute('SELECT * FROM tasks WHERE user_id = ?', (current_user_id,))
+        cursor.execute('SELECT * FROM tasks WHERE user_id = %s', (current_user_id,))
         tasks = cursor.fetchall()
         conn.close()
         return jsonify([dict(t) for t in tasks])
@@ -640,10 +658,10 @@ def handle_tasks(current_user_id):
         data = request.json
         cursor.execute('''
             INSERT INTO tasks (user_id, title, status, scheduled_day, scheduled_time_start, scheduled_time_end)
-            VALUES (?, ?, ?, ?, ?, ?)
+            VALUES (%s, %s, %s, %s, %s, %s) RETURNING id
         ''', (current_user_id, data['title'], data.get('status', 'todo'), data.get('scheduled_day'), data.get('time_start'), data.get('time_end')))
+        task_id = cursor.fetchone()['id']
         conn.commit()
-        task_id = cursor.lastrowid
         conn.close()
         return jsonify({'message': 'Added', 'id': task_id})
 
@@ -655,13 +673,13 @@ def manage_task(current_user_id, id):
     
     if request.method == 'PUT':
         data = request.json
-        cursor.execute('UPDATE tasks SET status = ? WHERE id = ? AND user_id = ?', (data['status'], id, current_user_id))
+        cursor.execute('UPDATE tasks SET status = %s WHERE id = %s AND user_id = %s', (data['status'], id, current_user_id))
         conn.commit()
         conn.close()
         return jsonify({'message': 'Updated'})
         
     if request.method == 'DELETE':
-        cursor.execute('DELETE FROM tasks WHERE id = ? AND user_id = ?', (id, current_user_id))
+        cursor.execute('DELETE FROM tasks WHERE id = %s AND user_id = %s', (id, current_user_id))
         conn.commit()
         conn.close()
         return jsonify({'message': 'Deleted'})
@@ -674,7 +692,8 @@ def user_settings(current_user_id):
     cursor = conn.cursor()
     
     if request.method == 'GET':
-        user = cursor.execute("SELECT display_name, theme, background_image, streak FROM users WHERE id = ?", (current_user_id,)).fetchone()
+        cursor.execute("SELECT display_name, theme, background_image, streak FROM users WHERE id = %s", (current_user_id,))
+        user = cursor.fetchone()
         conn.close()
         if not user:
             return jsonify({'message': 'User not found'}), 404
@@ -686,7 +705,7 @@ def user_settings(current_user_id):
         theme = data.get('theme')
         background_image = data.get('background_image')
         
-        cursor.execute("UPDATE users SET display_name = ?, theme = ?, background_image = ? WHERE id = ?", 
+        cursor.execute("UPDATE users SET display_name = %s, theme = %s, background_image = %s WHERE id = %s", 
                       (display_name, theme, background_image, current_user_id))
         conn.commit()
         conn.close()
@@ -699,16 +718,17 @@ def manage_music(current_user_id):
     cursor = conn.cursor()
     
     if request.method == 'GET':
-        links = cursor.execute("SELECT * FROM music_links WHERE user_id = ?", (current_user_id,)).fetchall()
+        cursor.execute("SELECT * FROM music_links WHERE user_id = %s", (current_user_id,))
+        links = cursor.fetchall()
         conn.close()
         return jsonify([dict(row) for row in links])
         
     if request.method == 'POST':
         data = request.json
-        cursor.execute("INSERT INTO music_links (user_id, title, youtube_url) VALUES (?, ?, ?)", 
+        cursor.execute("INSERT INTO music_links (user_id, title, youtube_url) VALUES (%s, %s, %s) RETURNING id", 
                       (current_user_id, data['title'], data['youtube_url']))
+        link_id = cursor.fetchone()['id']
         conn.commit()
-        link_id = cursor.lastrowid
         conn.close()
         return jsonify({'message': 'Music added', 'id': link_id})
 
@@ -717,7 +737,7 @@ def manage_music(current_user_id):
 def delete_music(current_user_id, id):
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute("DELETE FROM music_links WHERE id = ? AND user_id = ?", (id, current_user_id))
+    cursor.execute("DELETE FROM music_links WHERE id = %s AND user_id = %s", (id, current_user_id))
     conn.commit()
     conn.close()
     return jsonify({'message': 'Music deleted'})
@@ -741,10 +761,10 @@ def upload_music(current_user_id):
         conn = get_db_connection()
         cursor = conn.cursor()
         title = request.form.get('title', file.filename)
-        cursor.execute("INSERT INTO music_links (user_id, title, type, file_path) VALUES (?, ?, 'mp3', ?)", 
+        cursor.execute("INSERT INTO music_links (user_id, title, type, file_path) VALUES (%s, %s, 'mp3', %s) RETURNING id", 
                       (current_user_id, title, filename))
+        link_id = cursor.fetchone()['id']
         conn.commit()
-        link_id = cursor.lastrowid
         conn.close()
         return jsonify({'message': 'File uploaded', 'id': link_id})
     return jsonify({'message': 'Invalid file type'}), 400
@@ -758,16 +778,18 @@ def manage_playlists(current_user_id):
     cursor = conn.cursor()
     
     if request.method == 'GET':
-        playlists = cursor.execute("SELECT * FROM playlists WHERE user_id = ?", (current_user_id,)).fetchall()
+        cursor.execute("SELECT * FROM playlists WHERE user_id = %s", (current_user_id,))
+        playlists = cursor.fetchall()
         result = []
         for p in playlists:
-            items = cursor.execute('''
+            cursor.execute('''
                 SELECT pi.id as item_id, pi.order_index, ml.*
                 FROM playlist_items pi
                 JOIN music_links ml ON pi.music_id = ml.id
-                WHERE pi.playlist_id = ?
+                WHERE pi.playlist_id = %s
                 ORDER BY pi.order_index ASC
-            ''', (p['id'],)).fetchall()
+            ''', (p['id'],))
+            items = cursor.fetchall()
             d = dict(p)
             d['items'] = [dict(i) for i in items]
             result.append(d)
@@ -777,9 +799,9 @@ def manage_playlists(current_user_id):
     if request.method == 'POST':
         data = request.json
         name = data.get('name', 'New Playlist')
-        cursor.execute("INSERT INTO playlists (user_id, name) VALUES (?, ?)", (current_user_id, name))
+        cursor.execute("INSERT INTO playlists (user_id, name) VALUES (%s, %s) RETURNING id", (current_user_id, name))
+        pid = cursor.fetchone()['id']
         conn.commit()
-        pid = cursor.lastrowid
         conn.close()
         return jsonify({'message': 'Playlist created', 'id': pid})
 
@@ -788,7 +810,7 @@ def manage_playlists(current_user_id):
 def delete_playlist(current_user_id, id):
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute("DELETE FROM playlists WHERE id = ? AND user_id = ?", (id, current_user_id))
+    cursor.execute("DELETE FROM playlists WHERE id = %s AND user_id = %s", (id, current_user_id))
     conn.commit()
     conn.close()
     return jsonify({'message': 'Playlist deleted'})
@@ -801,19 +823,20 @@ def add_playlist_item(current_user_id, id):
     cursor = conn.cursor()
     
     # check ownership
-    p = cursor.execute("SELECT * FROM playlists WHERE id = ? AND user_id = ?", (id, current_user_id)).fetchone()
+    cursor.execute("SELECT * FROM playlists WHERE id = %s AND user_id = %s", (id, current_user_id))
+    p = cursor.fetchone()
     if not p:
         conn.close()
         return jsonify({'message': 'Not found'}), 404
         
     music_id = data.get('music_id')
     # get max order
-    max_order = cursor.execute("SELECT MAX(order_index) as m FROM playlist_items WHERE playlist_id = ?", (id,)).fetchone()['m']
+    max_order = cursor.execute("SELECT MAX(order_index) as m FROM playlist_items WHERE playlist_id = %s", (id,)).fetchone()['m']
     next_order = (max_order or 0) + 1
     
-    cursor.execute("INSERT INTO playlist_items (playlist_id, music_id, order_index) VALUES (?, ?, ?)", (id, music_id, next_order))
+    cursor.execute("INSERT INTO playlist_items (playlist_id, music_id, order_index) VALUES (%s, %s, %s) RETURNING id", (id, music_id, next_order))
+    item_id = cursor.fetchone()['id']
     conn.commit()
-    item_id = cursor.lastrowid
     conn.close()
     return jsonify({'message': 'Item added', 'id': item_id})
 
@@ -825,7 +848,7 @@ def delete_playlist_item(current_user_id, item_id):
     # verify ownership via playlist
     cursor.execute('''
         DELETE FROM playlist_items 
-        WHERE id = ? AND playlist_id IN (SELECT id FROM playlists WHERE user_id = ?)
+        WHERE id = %s AND playlist_id IN (SELECT id FROM playlists WHERE user_id = %s)
     ''', (item_id, current_user_id))
     conn.commit()
     conn.close()
@@ -839,13 +862,14 @@ def manage_rooms(current_user_id):
     cursor = conn.cursor()
     
     if request.method == 'GET':
-        rooms = cursor.execute('''
+        cursor.execute('''
             SELECT sr.*, u.display_name as host_name,
                    (SELECT COUNT(*) FROM study_room_members WHERE room_id = sr.id) as current_participants
             FROM study_rooms sr
             JOIN users u ON sr.host_id = u.id
             WHERE sr.status = 'active'
-        ''').fetchall()
+        ''')
+        rooms = cursor.fetchall()
         conn.close()
         return jsonify([dict(row) for row in rooms])
         
@@ -858,16 +882,16 @@ def manage_rooms(current_user_id):
             playlist_id = None
         
         # Close existing rooms of this host
-        cursor.execute("UPDATE study_rooms SET status = 'closed' WHERE host_id = ?", (current_user_id,))
+        cursor.execute("UPDATE study_rooms SET status = 'closed' WHERE host_id = %s", (current_user_id,))
         
         cursor.execute('''
             INSERT INTO study_rooms (host_id, max_participants, require_approval, playlist_id, current_song_index, music_start_time, created_at)
-            VALUES (?, ?, ?, ?, 0, ?, ?)
+            VALUES (%s, %s, %s, %s, 0, %s, %s) RETURNING id
         ''', (current_user_id, max_p, req_app, playlist_id, datetime.datetime.utcnow().isoformat(), datetime.datetime.utcnow().isoformat()))
-        room_id = cursor.lastrowid
+        room_id = cursor.fetchone()['id']
         
         # Add host to room members
-        cursor.execute("INSERT INTO study_room_members (room_id, user_id, status, joined_at) VALUES (?, ?, 'approved', ?)",
+        cursor.execute("INSERT INTO study_room_members (room_id, user_id, status, joined_at) VALUES (%s, %s, 'approved', %s)",
                       (room_id, current_user_id, datetime.datetime.utcnow().isoformat()))
         conn.commit()
         conn.close()
@@ -879,12 +903,14 @@ def join_room(current_user_id, room_id):
     conn = get_db_connection()
     cursor = conn.cursor()
     
-    room = cursor.execute("SELECT * FROM study_rooms WHERE id = ? AND status = 'active'", (room_id,)).fetchone()
+    cursor.execute("SELECT * FROM study_rooms WHERE id = %s AND status = 'active'", (room_id,))
+    
+    room = cursor.fetchone()
     if not room:
         conn.close()
         return jsonify({'message': 'Room not found or inactive'}), 404
         
-    members_count = cursor.execute("SELECT COUNT(*) as c FROM study_room_members WHERE room_id = ?", (room_id,)).fetchone()['c']
+    members_count = cursor.execute("SELECT COUNT(*) as c FROM study_room_members WHERE room_id = %s", (room_id,)).fetchone()['c']
     if members_count >= room['max_participants'] and room['host_id'] != current_user_id:
         conn.close()
         return jsonify({'message': 'Room is full'}), 400
@@ -894,7 +920,7 @@ def join_room(current_user_id, room_id):
     # Insert or update
     cursor.execute('''
         INSERT INTO study_room_members (room_id, user_id, status, joined_at)
-        VALUES (?, ?, ?, ?)
+        VALUES (%s, %s, %s, %s)
         ON CONFLICT(room_id, user_id) DO UPDATE SET status=excluded.status
     ''', (room_id, current_user_id, status, datetime.datetime.utcnow().isoformat()))
     
@@ -908,12 +934,14 @@ def kick_user(current_user_id, room_id, target_user_id):
     conn = get_db_connection()
     cursor = conn.cursor()
     
-    room = cursor.execute("SELECT host_id FROM study_rooms WHERE id = ?", (room_id,)).fetchone()
+    cursor.execute("SELECT host_id FROM study_rooms WHERE id = %s", (room_id,))
+    
+    room = cursor.fetchone()
     if not room or room['host_id'] != current_user_id:
         conn.close()
         return jsonify({'message': 'Unauthorized'}), 403
         
-    cursor.execute("DELETE FROM study_room_members WHERE room_id = ? AND user_id = ?", (room_id, target_user_id))
+    cursor.execute("DELETE FROM study_room_members WHERE room_id = %s AND user_id = %s", (room_id, target_user_id))
     conn.commit()
     conn.close()
     return jsonify({'message': 'User kicked'})
@@ -925,13 +953,15 @@ def next_song(current_user_id, room_id):
     conn = get_db_connection()
     cursor = conn.cursor()
     
-    room = cursor.execute("SELECT * FROM study_rooms WHERE id = ?", (room_id,)).fetchone()
+    cursor.execute("SELECT * FROM study_rooms WHERE id = %s", (room_id,))
+    
+    room = cursor.fetchone()
     if not room or room['host_id'] != current_user_id:
         conn.close()
         return jsonify({'message': 'Unauthorized'}), 403
         
     new_index = room['current_song_index'] + 1
-    cursor.execute("UPDATE study_rooms SET current_song_index = ?, music_start_time = ? WHERE id = ?",
+    cursor.execute("UPDATE study_rooms SET current_song_index = %s, music_start_time = %s WHERE id = %s",
                   (new_index, datetime.datetime.utcnow().isoformat(), room_id))
     conn.commit()
     conn.close()
@@ -947,16 +977,17 @@ def leave_room(current_user_id, room_id):
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
-        room = cursor.execute('SELECT host_id FROM study_rooms WHERE id = ?', (room_id,)).fetchone()
+        cursor.execute('SELECT host_id FROM study_rooms WHERE id = %s', (room_id,))
+        room = cursor.fetchone()
         if not room:
             return jsonify({'message': 'Room not found'}), 404
         
         if room['host_id'] == current_user_id:
             # Host leaves, soft delete room
-            cursor.execute("UPDATE study_rooms SET status = 'closed' WHERE id = ?", (room_id,))
+            cursor.execute("UPDATE study_rooms SET status = 'closed' WHERE id = %s", (room_id,))
         else:
             # Member leaves
-            cursor.execute("DELETE FROM study_room_members WHERE room_id = ? AND user_id = ?", (room_id, current_user_id))
+            cursor.execute("DELETE FROM study_room_members WHERE room_id = %s AND user_id = %s", (room_id, current_user_id))
         
         conn.commit()
         return jsonify({'message': 'Left room successfully'}), 200
@@ -975,7 +1006,7 @@ def sync_room(current_user_id, room_id):
         SELECT sr.*, ml.title as music_title, ml.type as music_type, ml.youtube_url, ml.file_path 
         FROM study_rooms sr
         LEFT JOIN music_links ml ON sr.music_id = ml.id
-        WHERE sr.id = ?
+        WHERE sr.id = %s
     ''', (room_id,)).fetchone()
     
     if not room:
@@ -983,17 +1014,19 @@ def sync_room(current_user_id, room_id):
         return jsonify({'message': 'Room not found'}), 404
         
     # Check if user is in room and approved
-    member = cursor.execute("SELECT status FROM study_room_members WHERE room_id = ? AND user_id = ?", (room_id, current_user_id)).fetchone()
+    cursor.execute("SELECT status FROM study_room_members WHERE room_id = %s AND user_id = %s", (room_id, current_user_id))
+    member = cursor.fetchone()
     if not member or member['status'] != 'approved':
         conn.close()
         return jsonify({'message': 'Not a member or pending'}), 403
         
-    members = cursor.execute('''
+    cursor.execute('''
         SELECT u.id, u.display_name, u.username, srm.status
         FROM study_room_members srm
         JOIN users u ON srm.user_id = u.id
-        WHERE srm.room_id = ?
-    ''', (room_id,)).fetchall()
+        WHERE srm.room_id = %s
+    ''', (room_id,))
+    members = cursor.fetchall()
     
     conn.close()
     
