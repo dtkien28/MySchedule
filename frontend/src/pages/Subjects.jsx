@@ -233,9 +233,9 @@ export default function Subjects() {
     <div>
       <h2>Quản lý Lịch Học</h2>
       
-      <div style={{display: 'flex', gap: '20px'}}>
-        {/* Form bên trái */}
-        <div style={{flex: 1}}>
+      <div style={{display: 'flex', flexDirection: 'column', gap: '20px'}}>
+        {/* Form phía trên */}
+        <div style={{width: '100%'}}>
           <div className="card">
             <h3>Smart Paste (Dán dữ liệu từ DTU)</h3>
             <textarea 
@@ -277,8 +277,8 @@ export default function Subjects() {
                   <option value="T5">T5</option><option value="T6">T6</option><option value="T7">T7</option><option value="CN">CN</option>
                 </select>
                 <input className="input-field" style={{marginBottom:0}} placeholder="Ca" value={t.time} onChange={e => handleTimeChange(idx, 'time', e.target.value)} />
-                <input className="input-field" style={{marginBottom:0, flex:1}} placeholder="Phòng/Địa điểm" value={t.room} onChange={e => handleTimeChange(idx, 'room', e.target.value)} />
-                <input className="input-field" style={{marginBottom:0, width:'80px'}} placeholder="Tuần Hủy" value={t.cancel_weeks.join(', ')} onChange={e => handleTimeChange(idx, 'cancel_weeks', e.target.value)} />
+                <input className="input-field" style={{marginBottom:0, flex: 1}} placeholder="Phòng/Địa điểm" value={t.room} onChange={e => handleTimeChange(idx, 'room', e.target.value)} />
+                <input className="input-field" style={{marginBottom:0, width:'150px'}} placeholder="Tuần Hủy" value={t.cancel_weeks.join(', ')} onChange={e => handleTimeChange(idx, 'cancel_weeks', e.target.value)} />
                 <button className="btn" style={{background:'red', color:'white', padding:'8px'}} onClick={() => removeTimeRow(idx)}>✕</button>
               </div>
             ))}
@@ -303,8 +303,8 @@ export default function Subjects() {
           </div>
         </div>
 
-        {/* Lịch bên phải */}
-        <div style={{flex: 1.5}}>
+        {/* Lịch phía dưới */}
+        <div style={{width: '100%'}}>
           <div className="card">
             <div style={{display: 'flex', gap: '10px', marginBottom: '20px'}}>
               <button className={`btn ${currentView === 'week' ? 'btn-primary' : 'btn-outline'}`} style={{border: '1px solid var(--primary-color)'}} onClick={() => setCurrentView('week')}>Lịch Tuần</button>

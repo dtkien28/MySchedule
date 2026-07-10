@@ -222,53 +222,68 @@ def parse_dtu_string(raw_text: str):
         start_week = ""
         end_week = ""
         time_slots = []
-        rooms = []
-        cancel_mode = False
+        
         time_regex = r'(T[2-7]|CN)\s*:\s*(\d{1,2}[:h]\d{2})\s*-\s*(\d{1,2}[:h]\d{2})'
         
         for line in lines:
             week_match = re.search(r'(%s:\b|^)(\d+)\s*--\s*(\d+)', line)
             if week_match:
-                start_week = int(week_match.group(1))
-                end_week = int(week_match.group(2))
+                start_week = int(week_match.group(2))
+                end_week = int(week_match.group(3))
                 break
                 
+        # Extract all time slots
         for line in lines:
-            if "Xem Lịch Học Bổ Sung" in line:
+            if "Tuần hủy:" in line or "Hủy" in line:
                 continue
-            if "Tuần hủy:" in line:
-                cancel_mode = True
-                continue
-                
-            if not cancel_mode:
-                matches = re.finditer(time_regex, line)
-                for m in matches:
-                    time_slots.append({"day": m.group(1), "time": f"{m.group(2).replace('h', ':')}-{m.group(3).replace('h', ':')}", "room": "", "cancel_weeks": []})
-            else:
-                cancel_match = re.search(r'(T[2-7]|CN):\s*Hủy\s*([\d,\s]+)', line)
-                if cancel_match:
-                    day = cancel_match.group(1)
-                    weeks = [int(w.strip()) for w in cancel_match.group(2).split(',') if w.strip().isdigit()]
-                    for ts in time_slots:
-                        if ts['day'] == day:
-                            ts['cancel_weeks'].extend(weeks)
-                else:
-                    if not re.match(r'^\d{2}/\d{2}/\d{4}$', line) and not re.match(r'^\d+$', line) and "Tuần hủy" not in line and "Hủy" not in line:
-                        rooms.append(line)
-        
-        valid_rooms = [r for r in rooms if len(r) > 2]
-        
-        if len(valid_rooms) > 0:
-            if len(valid_rooms) == 1:
+            matches = re.finditer(time_regex, line)
+            for m in matches:
+                time_slots.append({"day": m.group(1), "time": f"{m.group(2).replace('h', ':')}-{m.group(3).replace('h', ':')}", "room": "", "cancel_weeks": []})
+
+        # Extract cancel weeks
+        for line in lines:
+            cancel_match = re.search(r'(T[2-7]|CN):\s*Hủy\s*([\d,\s]+)', line)
+            if cancel_match:
+                day = cancel_match.group(1)
+                weeks = [int(w.strip()) for w in cancel_match.group(2).split(',') if w.strip().isdigit()]
                 for ts in time_slots:
-                    ts['room'] = valid_rooms[0].replace('\t', ' ')
+                    if ts['day'] == day:
+                        ts['cancel_weeks'].extend(weeks)
+
+        # Extract room lines
+        room_lines = []
+        for line in lines[1:]:
+            if "Tuần hủy:" in line or "Hủy" in line or "Xem Lịch Học Bổ Sung" in line: continue
+            if re.search(time_regex, line): continue
+            if re.search(r'^\d+$', line) or re.match(r'^\d{2}/\d{2}/\d{4}$', line): continue
+            if line.strip():
+                room_lines.append(line.strip())
+
+        # Attempt to parse rooms and locations
+        rooms_col = []
+        locs_col = []
+        for rl in room_lines:
+            if '\t' in rl:
+                pts = rl.split('\t')
+                r_parts = pts[0].strip().split()
+                if len(r_parts) > 1 and len(r_parts) <= len(time_slots):
+                    rooms_col.extend(r_parts)
+                else:
+                    rooms_col.append(pts[0].strip())
+                locs_col.append(pts[1].strip())
             else:
-                assigned = valid_rooms[-len(time_slots):]
-                if len(assigned) < len(time_slots):
-                    while len(assigned) < len(time_slots):
-                        assigned.append(assigned[-1])
-                for i, ts in enumerate(time_slots):
-                    ts['room'] = assigned[i].replace('\t', ' ')
+                locs_col.append(rl.strip())
+        
+        # padding
+        while len(rooms_col) < len(time_slots):
+            rooms_col.append(rooms_col[-1] if rooms_col else "")
+        while len(locs_col) < len(time_slots):
+            locs_col.append(locs_col[-1] if locs_col else "")
+            
+        for i, ts in enumerate(time_slots):
+            r = rooms_col[i] if i < len(rooms_col) else ""
+            l = locs_col[i] if i < len(locs_col) else ""
+            ts['room'] = f"{r} {l}".strip()
                 
         return {
             "status": "success",
@@ -329,10 +344,20 @@ def add_subject(current_user_id):
     conn = get_db_connection()
     cursor = conn.cursor()
     
+    try:
+        s_week = int(data.get('start_week') or 1)
+    except (ValueError, TypeError):
+        s_week = 1
+        
+    try:
+        e_week = int(data.get('end_week') or 52)
+    except (ValueError, TypeError):
+        e_week = 52
+
     cursor.execute('''
         INSERT INTO subjects (user_id, class_code, subject_name, type, start_week, end_week)
         VALUES (%s, %s, %s, %s, %s, %s) RETURNING id
-    ''', (current_user_id, data['class_code'], data['subject_name'], data.get('type', ''), int(data['start_week']), int(data['end_week'])))
+    ''', (current_user_id, data.get('class_code',''), data.get('subject_name',''), data.get('type', ''), s_week, e_week))
     
     subject_id = cursor.fetchone()['id']
     
@@ -361,12 +386,22 @@ def edit_subject(current_user_id):
     conn = get_db_connection()
     cursor = conn.cursor()
     
+    try:
+        s_week = int(data.get('start_week') or 1)
+    except (ValueError, TypeError):
+        s_week = 1
+        
+    try:
+        e_week = int(data.get('end_week') or 52)
+    except (ValueError, TypeError):
+        e_week = 52
+
     # Update main table
     cursor.execute('''
         UPDATE subjects 
         SET class_code=%s, subject_name=%s, type=%s, start_week=%s, end_week=%s
         WHERE id=%s AND user_id=%s
-    ''', (data['class_code'], data['subject_name'], data.get('type', ''), int(data['start_week']), int(data['end_week']), subject_id, current_user_id))
+    ''', (data.get('class_code',''), data.get('subject_name',''), data.get('type', ''), s_week, e_week, subject_id, current_user_id))
     
     # Delete old times
     cursor.execute('DELETE FROM study_times WHERE subject_id=%s', (subject_id,))
@@ -692,12 +727,32 @@ def user_settings(current_user_id):
     cursor = conn.cursor()
     
     if request.method == 'GET':
-        cursor.execute("SELECT display_name, theme, background_image, streak FROM users WHERE id = %s", (current_user_id,))
+        cursor.execute("SELECT * FROM users WHERE id = %s", (current_user_id,))
         user = cursor.fetchone()
-        conn.close()
         if not user:
+            conn.close()
             return jsonify({'message': 'User not found'}), 404
-        return jsonify(dict(user))
+
+        # Update Streak on load
+        today = datetime.datetime.utcnow().date()
+        last_active = None
+        if user['last_active_date']:
+            last_active = user['last_active_date'] if isinstance(user['last_active_date'], datetime.date) else datetime.datetime.strptime(user['last_active_date'], '%Y-%m-%d').date()
+        
+        streak = user['streak'] or 0
+        if last_active == today - datetime.timedelta(days=1):
+            streak += 1
+            cursor.execute("UPDATE users SET streak = %s, last_active_date = %s WHERE id = %s", (streak, today.isoformat(), current_user_id))
+            conn.commit()
+        elif last_active != today:
+            streak = 1
+            cursor.execute("UPDATE users SET streak = %s, last_active_date = %s WHERE id = %s", (streak, today.isoformat(), current_user_id))
+            conn.commit()
+
+        user_dict = dict(user)
+        user_dict['streak'] = streak
+        conn.close()
+        return jsonify(user_dict)
         
     if request.method == 'PUT':
         data = request.json
@@ -1004,12 +1059,7 @@ def sync_room(current_user_id, room_id):
     conn = get_db_connection()
     cursor = conn.cursor()
     
-    cursor.execute('''
-        SELECT sr.*, ml.title as music_title, ml.type as music_type, ml.youtube_url, ml.file_path 
-        FROM study_rooms sr
-        LEFT JOIN music_links ml ON sr.music_id = ml.id
-        WHERE sr.id = %s
-    ''', (room_id,))
+    cursor.execute('SELECT * FROM study_rooms WHERE id = %s', (room_id,))
     room = cursor.fetchone()
     
     if not room:
@@ -1022,6 +1072,29 @@ def sync_room(current_user_id, room_id):
     if not member or member['status'] != 'approved':
         conn.close()
         return jsonify({'message': 'Not a member or pending'}), 403
+
+    room_dict = dict(room)
+    room_dict['music_title'] = None
+    room_dict['music_type'] = None
+    room_dict['youtube_url'] = None
+    room_dict['file_path'] = None
+
+    if room_dict.get('playlist_id'):
+        cursor.execute('''
+            SELECT ml.* 
+            FROM playlist_items pi
+            JOIN music_links ml ON pi.music_id = ml.id
+            WHERE pi.playlist_id = %s
+            ORDER BY pi.order_index ASC
+        ''', (room_dict['playlist_id'],))
+        items = cursor.fetchall()
+        if items:
+            idx = room_dict['current_song_index'] % len(items)
+            current_music = items[idx]
+            room_dict['music_title'] = current_music['title']
+            room_dict['music_type'] = current_music['type']
+            room_dict['youtube_url'] = current_music['youtube_url']
+            room_dict['file_path'] = current_music['file_path']
         
     cursor.execute('''
         SELECT u.id, u.display_name, u.username, srm.status
@@ -1034,7 +1107,7 @@ def sync_room(current_user_id, room_id):
     conn.close()
     
     return jsonify({
-        'room': dict(room),
+        'room': room_dict,
         'members': [dict(m) for m in members]
     })
 

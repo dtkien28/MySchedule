@@ -43,13 +43,8 @@ export default function Study() {
       }
     }, 1000);
   
-  const doneCount = sessionTasks.filter(t => t.done).length;
-  const totalCount = sessionTasks.length;
-  const sessionProgress = totalCount === 0 ? -1 : Math.round((doneCount / totalCount) * 100);
-  const sessionProgressText = totalCount === 0 ? 'Thêm nhiệm vụ để bắt đầu' : `${doneCount}/${totalCount} việc`;
-
-  return () => clearInterval(t);
-  }, [activeTab]);
+    return () => clearInterval(t);
+  }, [activeTab, isStarted]);
 
   useEffect(() => {
     fetchPlaylists();
@@ -112,13 +107,7 @@ export default function Study() {
     if (!url) return null;
     const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
     const match = url.match(regExp);
-  
-  const doneCount = sessionTasks.filter(t => t.done).length;
-  const totalCount = sessionTasks.length;
-  const sessionProgress = totalCount === 0 ? -1 : Math.round((doneCount / totalCount) * 100);
-  const sessionProgressText = totalCount === 0 ? 'Thêm nhiệm vụ để bắt đầu' : `${doneCount}/${totalCount} việc`;
-
-  return (match && match[2].length === 11) ? match[2] : null;
+    return (match && match[2].length === 11) ? match[2] : null;
   };
 
   // --- Music Playback Logic ---
@@ -157,13 +146,7 @@ export default function Study() {
       syncInterval.current = setInterval(syncRoom, 5000);
     }
     
-  
-  const doneCount = sessionTasks.filter(t => t.done).length;
-  const totalCount = sessionTasks.length;
-  const sessionProgress = totalCount === 0 ? -1 : Math.round((doneCount / totalCount) * 100);
-  const sessionProgressText = totalCount === 0 ? 'Thêm nhiệm vụ để bắt đầu' : `${doneCount}/${totalCount} việc`;
-
-  return () => clearInterval(syncInterval.current);
+    return () => clearInterval(syncInterval.current);
   }, [activeTab, inRoom]);
 
   const fetchRooms = async () => {
@@ -235,13 +218,7 @@ export default function Study() {
 
   useEffect(() => {
       const currentRoom = inRoom;
-    
-  const doneCount = sessionTasks.filter(t => t.done).length;
-  const totalCount = sessionTasks.length;
-  const sessionProgress = totalCount === 0 ? -1 : Math.round((doneCount / totalCount) * 100);
-  const sessionProgressText = totalCount === 0 ? 'Thêm nhiệm vụ để bắt đầu' : `${doneCount}/${totalCount} việc`;
-
-  return () => {
+      return () => {
           if (currentRoom) {
               api.post(`/rooms/${currentRoom.id}/leave`).catch(() => {});
           }
