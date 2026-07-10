@@ -371,7 +371,7 @@ export default function Study() {
             {currentMusic?.type === 'mp3' && isStarted && (
               <audio 
                 controls autoPlay style={{ width: '100%', marginTop: '20px' }}
-                src={`http://127.0.0.1:5000/static/uploads/music/${currentMusic.file_path}`}
+                src={`${import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace('/api', '') : 'http://127.0.0.1:5000'}/static/uploads/music/${currentMusic.file_path}`}
                 onEnded={handleNextSong}
                 onTimeUpdate={(e) => {
                     if (activeTab === 'group' && inRoom) {
