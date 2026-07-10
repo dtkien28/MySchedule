@@ -831,7 +831,8 @@ def add_playlist_item(current_user_id, id):
         
     music_id = data.get('music_id')
     # get max order
-    max_order = cursor.execute("SELECT MAX(order_index) as m FROM playlist_items WHERE playlist_id = %s", (id,)).fetchone()['m']
+    cursor.execute("SELECT MAX(order_index) as m FROM playlist_items WHERE playlist_id = %s", (id,))
+    max_order = cursor.fetchone()['m']
     next_order = (max_order or 0) + 1
     
     cursor.execute("INSERT INTO playlist_items (playlist_id, music_id, order_index) VALUES (%s, %s, %s) RETURNING id", (id, music_id, next_order))
@@ -910,7 +911,8 @@ def join_room(current_user_id, room_id):
         conn.close()
         return jsonify({'message': 'Room not found or inactive'}), 404
         
-    members_count = cursor.execute("SELECT COUNT(*) as c FROM study_room_members WHERE room_id = %s", (room_id,)).fetchone()['c']
+    cursor.execute("SELECT COUNT(*) as c FROM study_room_members WHERE room_id = %s", (room_id,))
+    members_count = cursor.fetchone()['c']
     if members_count >= room['max_participants'] and room['host_id'] != current_user_id:
         conn.close()
         return jsonify({'message': 'Room is full'}), 400
@@ -1002,12 +1004,13 @@ def sync_room(current_user_id, room_id):
     conn = get_db_connection()
     cursor = conn.cursor()
     
-    room = cursor.execute('''
+    cursor.execute('''
         SELECT sr.*, ml.title as music_title, ml.type as music_type, ml.youtube_url, ml.file_path 
         FROM study_rooms sr
         LEFT JOIN music_links ml ON sr.music_id = ml.id
         WHERE sr.id = %s
-    ''', (room_id,)).fetchone()
+    ''', (room_id,))
+    room = cursor.fetchone()
     
     if not room:
         conn.close()
