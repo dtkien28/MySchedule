@@ -1035,9 +1035,15 @@ def sync_room(current_user_id, room_id):
         'members': [dict(m) for m in members]
     })
 
-if __name__ == '__main__':
+# Initialize database on startup (works for gunicorn as well)
+try:
     init_db()
+    print("Database initialized.")
+except Exception as e:
+    print(f"Warning: Could not initialize database automatically. {e}")
+
+if __name__ == '__main__':
     if os.environ.get("FLASK_ENV") == "development":
-        app.run(debug=True, port=5000)
+        app.run(debug=True, port=int(os.environ.get("PORT", 5000)))
     else:
-        app.run(port=5000)
+        app.run(port=int(os.environ.get("PORT", 5000)))
