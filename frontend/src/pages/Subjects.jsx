@@ -276,10 +276,10 @@ export default function Subjects() {
                   <option value="T2">T2</option><option value="T3">T3</option><option value="T4">T4</option>
                   <option value="T5">T5</option><option value="T6">T6</option><option value="T7">T7</option><option value="CN">CN</option>
                 </select>
-                <input className="input-field" style={{marginBottom:0}} placeholder="Ca" value={t.time} onChange={e => handleTimeChange(idx, 'time', e.target.value)} />
-                <input className="input-field" style={{marginBottom:0, flex: 1}} placeholder="Phòng/Địa điểm" value={t.room} onChange={e => handleTimeChange(idx, 'room', e.target.value)} />
-                <input className="input-field" style={{marginBottom:0, width:'150px'}} placeholder="Tuần Hủy" value={t.cancel_weeks.join(', ')} onChange={e => handleTimeChange(idx, 'cancel_weeks', e.target.value)} />
-                <button className="btn" style={{background:'red', color:'white', padding:'8px'}} onClick={() => removeTimeRow(idx)}>✕</button>
+                <input className="input-field" style={{marginBottom:0, width: '120px', flexShrink: 0}} placeholder="Ca" value={t.time} onChange={e => handleTimeChange(idx, 'time', e.target.value)} />
+                <input className="input-field" style={{marginBottom:0, flex: 1, minWidth: '100px'}} placeholder="Phòng/Địa điểm" value={t.room} onChange={e => handleTimeChange(idx, 'room', e.target.value)} />
+                <input className="input-field" style={{marginBottom:0, width:'150px', flexShrink: 0}} placeholder="Tuần Hủy" value={t.cancel_weeks.join(', ')} onChange={e => handleTimeChange(idx, 'cancel_weeks', e.target.value)} />
+                <button className="btn" style={{background:'red', color:'white', padding:'8px', flexShrink: 0}} onClick={() => removeTimeRow(idx)}>✕</button>
               </div>
             ))}
             <button className="btn btn-secondary" onClick={addTimeRow}>+ Thêm buổi</button>

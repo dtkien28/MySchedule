@@ -226,10 +226,10 @@ def parse_dtu_string(raw_text: str):
         time_regex = r'(T[2-7]|CN)\s*:\s*(\d{1,2}[:h]\d{2})\s*-\s*(\d{1,2}[:h]\d{2})'
         
         for line in lines:
-            week_match = re.search(r'(%s:\b|^)(\d+)\s*--\s*(\d+)', line)
+            week_match = re.search(r'(\d+)\s*--\s*(\d+)', line)
             if week_match:
-                start_week = int(week_match.group(2))
-                end_week = int(week_match.group(3))
+                start_week = int(week_match.group(1))
+                end_week = int(week_match.group(2))
                 break
                 
         # Extract all time slots
@@ -1025,12 +1025,9 @@ def next_song(current_user_id, room_id):
     return jsonify({'message': 'Next song triggered'})
 
 
-@app.route('/api/rooms/<int:room_id>/leave', methods=['POST', 'OPTIONS'])
+@app.route('/api/rooms/<int:room_id>/leave', methods=['POST'])
 @token_required
 def leave_room(current_user_id, room_id):
-    if request.method == 'OPTIONS':
-        return jsonify({}), 200
-        
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
