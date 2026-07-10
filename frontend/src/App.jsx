@@ -21,10 +21,7 @@ function App() {
     
     if (theme === 'dark') document.body.className = 'dark-theme';
     
-    if (bgImage) {
-      document.body.style.backgroundImage = `url('/images/${bgImage}')`;
-    } else {
-      // Fetch weather Da Nang
+    const applyWeatherBg = () => {
       fetch('https://api.open-meteo.com/v1/forecast?latitude=16.0678&longitude=108.2208&current_weather=true')
         .then(res => res.json())
         .then(data => {
@@ -51,7 +48,21 @@ function App() {
           document.body.style.backgroundAttachment = 'fixed';
         })
         .catch(err => console.error("Weather API Error:", err));
+    };
+
+    if (bgImage) {
+      document.body.style.backgroundImage = `url('/images/${bgImage}')`;
+    } else {
+      applyWeatherBg();
     }
+
+    const handleUpdateWeather = () => {
+      if (!localStorage.getItem('bgImage')) {
+        applyWeatherBg();
+      }
+    };
+    window.addEventListener('updateWeatherBackground', handleUpdateWeather);
+    return () => window.removeEventListener('updateWeatherBackground', handleUpdateWeather);
   }, []);
 
   if (!token) {

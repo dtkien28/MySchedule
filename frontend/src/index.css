@@ -3,10 +3,10 @@
   --primary-hover: #1E293B;
   --secondary-color: #00D2FF;
   --bg-color: #f8fafc;
-  --card-bg: #ffffff;
+  --card-bg: rgba(255, 255, 255, 0.85);
   --text-main: #1E293B;
   --text-muted: #64748b;
-  --border-color: #e2e8f0;
+  --border-color: rgba(226, 232, 240, 0.5);
   --sidebar-width: 250px;
 }
 
@@ -15,10 +15,10 @@ body.dark-theme {
   --primary-hover: #1e293b;
   --secondary-color: #38bdf8;
   --bg-color: #1e293b;
-  --card-bg: #334155;
+  --card-bg: rgba(51, 65, 85, 0.85);
   --text-main: #f8fafc;
   --text-muted: #94a3b8;
-  --border-color: #475569;
+  --border-color: rgba(71, 85, 105, 0.5);
 }
 
 body.dark-theme::before {
@@ -108,6 +108,8 @@ body {
   box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
   border: 1px solid var(--border-color);
   margin-bottom: 24px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 .btn {

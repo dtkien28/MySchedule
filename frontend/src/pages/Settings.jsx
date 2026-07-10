@@ -45,9 +45,9 @@ export default function Settings() {
       if (bgImage) {
         document.body.style.backgroundImage = `url('/images/${bgImage}')`;
       } else {
-        // Leave it for weather logic to pick up next reload
+        // Leave it for weather logic to pick up next reload or manual refresh
         document.body.style.backgroundImage = 'none';
-        window.location.reload(); // Quick way to trigger weather bg
+        window.dispatchEvent(new Event('updateWeatherBackground'));
       }
       
       alert('Đã lưu cài đặt!');

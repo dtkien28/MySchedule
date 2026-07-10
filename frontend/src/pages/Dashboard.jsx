@@ -184,6 +184,7 @@ export default function Dashboard() {
     setEvents(events.map(e => (e.subject_id === subject_id && e.day === day) ? {...e, attended} : e));
     try {
       await api.post('/attendance', { subject_id, week: currentWeek, day, attended });
+      fetchData();
     } catch (e) {
       console.error(e);
     }
@@ -234,6 +235,7 @@ export default function Dashboard() {
     setTasks(tasks.map(t => t.id === id ? {...t, status} : t));
     try {
       await api.put(`/tasks/${id}`, { status });
+      fetchData();
     } catch (e) {
       console.error(e);
     }
@@ -243,6 +245,7 @@ export default function Dashboard() {
     setTasks(tasks.filter(t => t.id !== id));
     try {
       await api.delete(`/tasks/${id}`);
+      fetchData();
     } catch (e) {
       console.error(e);
     }
