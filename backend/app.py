@@ -396,7 +396,7 @@ def api_chatbot(current_user_id):
             )
 
         chat = client.chats.create(
-            model="gemini-2.5-flash",
+            model="gemini-3.1-flash-lite-preview",
             history=formatted_history,
             config=types.GenerateContentConfig(
                 system_instruction=system_prompt,
