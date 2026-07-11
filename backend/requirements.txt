@@ -8,3 +8,4 @@ Flask-Talisman
 bcrypt
 PyJWT
 sendgrid
+llama-cpp-python

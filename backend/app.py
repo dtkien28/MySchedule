@@ -16,6 +16,7 @@ import traceback
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 from db import init_db, get_db_connection
+import requests
 
 # Load environment variables
 load_dotenv()
@@ -202,108 +203,130 @@ def login():
 
 
 # --- SUBJECTS ROUTES (Using new DTU Parser logic) ---
+llm = None
+
+def get_llm():
+    global llm
+    if llm is None:
+        try:
+            from llama_cpp import Llama
+            model_path = os.path.join(os.path.dirname(__file__), 'models', 'qwen2-1.5b-trained.gguf')
+            llm = Llama(model_path=model_path, n_ctx=2048, verbose=False)
+        except Exception as e:
+            print("Failed to load Llama model:", e)
+            return None
+    return llm
+
 def parse_dtu_string(raw_text: str):
+    if not raw_text.strip():
+        return {"status": "error", "message": "Empty string"}
+        
+    model = get_llm()
+    if model is None:
+        return {"status": "error", "message": "Lỗi: Không thể tải model AI để phân tích."}
+        
     try:
-        lines = [line.strip() for line in raw_text.split('\n') if line.strip()]
-        if not lines:
-            return {"status": "error", "message": "Empty string"}
-            
-        class_code = ""
-        subject_name = ""
-        type_val = ""
-        start_week = 1
-        end_week = 52
+        response = model.create_chat_completion(
+            messages=[
+                {"role": "system", "content": "Bạn là một AI chuyên trích xuất thông tin lịch học thành định dạng JSON."},
+                {"role": "user", "content": raw_text}
+            ],
+            max_tokens=1024,
+            temperature=0.1
+        )
         
-        parts = lines[0].split('\t')
-        class_code = parts[0].strip() if len(parts) > 0 else ""
-        subject_name = parts[1].strip() if len(parts) > 1 else ""
-        type_val = parts[2].strip() if len(parts) > 2 else ""
+        res_text = response["choices"][0]["message"]["content"].strip()
         
-        start_week = ""
-        end_week = ""
+        # Clean up markdown formatting if present
+        if res_text.startswith("```json"):
+            res_text = res_text[7:]
+        elif res_text.startswith("```"):
+            res_text = res_text[3:]
+        if res_text.endswith("```"):
+            res_text = res_text[:-3]
+        res_text = res_text.strip()
+        
+        parsed_data = json.loads(res_text)
+        
         time_slots = []
-        
-        time_regex = r'(T[2-7]|CN)\s*:\s*(\d{1,2}[:h]\d{2})\s*-\s*(\d{1,2}[:h]\d{2})'
-        
-        for line in lines:
-            week_match = re.search(r'(\d+)\s*--\s*(\d+)', line)
-            if week_match:
-                start_week = int(week_match.group(1))
-                end_week = int(week_match.group(2))
-                break
-                
-        # Extract all time slots
-        for line in lines:
-            if "Tuần hủy:" in line or "Hủy" in line:
-                continue
-            matches = re.finditer(time_regex, line)
-            for m in matches:
-                time_slots.append({"day": m.group(1), "time": f"{m.group(2).replace('h', ':')}-{m.group(3).replace('h', ':')}", "room": "", "cancel_weeks": []})
-
-        # Extract cancel weeks
-        for line in lines:
-            cancel_match = re.search(r'(T[2-7]|CN):\s*Hủy\s*([\d,\s]+)', line)
-            if cancel_match:
-                day = cancel_match.group(1)
-                weeks = [int(w.strip()) for w in cancel_match.group(2).split(',') if w.strip().isdigit()]
-                for ts in time_slots:
-                    if ts['day'] == day:
-                        ts['cancel_weeks'].extend(weeks)
-
-        # Extract room lines
-        room_lines = []
-        for line in lines[1:]:
-            if "Tuần hủy:" in line or "Hủy" in line or "Xem Lịch Học Bổ Sung" in line: continue
-            if re.search(time_regex, line): continue
-            if re.search(r'^\d+$', line) or re.match(r'^\d{2}/\d{2}/\d{4}$', line): continue
-            if line.strip():
-                room_lines.append(line.strip())
-
-        # Attempt to parse rooms and locations
-        rooms_col = []
-        locs_col = []
-        for rl in room_lines:
-            if '\t' in rl:
-                pts = rl.split('\t')
-                r_parts = pts[0].strip().split()
-                if len(r_parts) > 1 and len(r_parts) <= len(time_slots):
-                    rooms_col.extend(r_parts)
-                else:
-                    rooms_col.append(pts[0].strip())
-                locs_col.append(pts[1].strip())
-            else:
-                locs_col.append(rl.strip())
-        
-        # padding
-        while len(rooms_col) < len(time_slots):
-            rooms_col.append(rooms_col[-1] if rooms_col else "")
-        while len(locs_col) < len(time_slots):
-            locs_col.append(locs_col[-1] if locs_col else "")
+        for sched in parsed_data.get("schedules", []):
+            day = sched.get("day_of_week", "")
+            start_time = sched.get("start_time", "")
+            end_time = sched.get("end_time", "")
+            room = sched.get("room", "")
+            location = sched.get("location", "")
             
-        for i, ts in enumerate(time_slots):
-            r = rooms_col[i] if i < len(rooms_col) else ""
-            l = locs_col[i] if i < len(locs_col) else ""
-            ts['room'] = f"{r} {l}".strip()
-                
+            time_slots.append({
+                "day": day,
+                "time": f"{start_time}-{end_time}" if start_time and end_time else "",
+                "room": f"{room} {location}".strip(),
+                "cancel_weeks": sched.get("canceled_weeks", [])
+            })
+            
         return {
             "status": "success",
             "data": {
-                "class_code": class_code,
-                "subject_name": subject_name,
-                "type": type_val,
-                "start_week": start_week,
-                "end_week": end_week,
+                "class_code": parsed_data.get("class_name", ""),
+                "subject_name": parsed_data.get("subject_name", ""),
+                "type": parsed_data.get("type", ""),
+                "start_week": parsed_data.get("start_week", 1),
+                "end_week": parsed_data.get("end_week", 52),
                 "time": time_slots
             }
         }
     except Exception as e:
-        return {"status": "error", "message": str(e)}
+        traceback.print_exc()
+        return {"status": "error", "message": f"Lỗi phân tích AI: {str(e)}"}
 
 @app.route('/api/subjects/parse', methods=['POST'])
 @token_required
 def api_parse_subject(current_user_id):
     data = request.json
-    return jsonify(parse_dtu_string(data.get('raw_text', '')))
+    raw_text = data.get('raw_text', '')
+
+    # Lấy đường link public của Camber Node từ biến môi trường
+    camber_node_url = os.getenv("CAMBER_NODE_URL")
+    
+    if camber_node_url:
+        try:
+            # Bắn request thẳng vào endpoint /extract của máy chủ GPU FastAPI
+            api_endpoint = f"{camber_node_url.rstrip('/')}/extract"
+            
+            response = requests.post(api_endpoint, json={"raw_text": raw_text}, timeout=30)
+            response_data = response.json()
+            
+            if response_data.get("status") == "success":
+                parsed_ai = response_data["data"]
+                
+                # Map cấu trúc JSON của AI sang cấu trúc mảng time[] mà Frontend đang dùng
+                time_slots = []
+                for s in parsed_ai.get('schedules', []):
+                    time_slots.append({
+                        "day": s.get('day_of_week', ''),
+                        "time": f"{s.get('start_time', '')}-{s.get('end_time', '')}",
+                        "room": f"{s.get('room', '')} {s.get('location', '')}".strip(),
+                        "cancel_weeks": s.get('canceled_weeks', [])
+                    })
+
+                return jsonify({
+                    "status": "success",
+                    "data": {
+                        "class_code": parsed_ai.get('class_name', ''),
+                        "subject_name": parsed_ai.get('subject_name', ''),
+                        "type": parsed_ai.get('type', ''),
+                        "start_week": parsed_ai.get('start_week', 1),
+                        "end_week": parsed_ai.get('end_week', 52),
+                        "time": time_slots
+                    }
+                })
+            else:
+                print("Lỗi phân tích từ Camber AI:", response_data.get("message"))
+                
+        except Exception as e:
+            print("Không thể kết nối đến Camber Node:", e)
+
+    # Nếu máy chủ AI tắt, mất kết nối, hoặc chưa cấu hình URL -> Tự động Fallback về Regex nội bộ
+    return jsonify(parse_dtu_string(raw_text))
 
 @app.route('/api/subjects', methods=['GET'])
 @token_required

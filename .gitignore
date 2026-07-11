@@ -23,3 +23,10 @@ subjects.json
 # Build files
 dist/
 build/
+dataset.jsonl
+
+*.gguf
+models/
+
+server.py
+inference.py
