@@ -153,6 +153,45 @@ def verify_otp():
     finally:
         conn.close()
 
+@app.route('/api/auth/ai-helper', methods=['POST'])
+def auth_ai_helper():
+    data = request.json
+    action = data.get('action') # 'greeting' or 'login_error'
+    
+    current_time_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
+    try:
+        system_prompt = f"""
+        Bạn là Ketib AI. Bối cảnh thời gian hiện tại là: {current_time_str}.
+        Hãy trả lời cực kỳ ngắn gọn (1 câu), tự nhiên, hài hước một chút nếu phù hợp.
+        Tuyệt đối không giải thích dài dòng. Chỉ trả về một câu thoại.
+        """
+        
+        user_prompt = ""
+        if action == 'greeting':
+            user_prompt = "Hãy viết một câu chào mừng ngắn gọn cho người dùng đang ở trang đăng nhập. Dựa vào giờ hiện tại để có lời chào phù hợp (ví dụ đêm muộn thì hỏi sao còn thức, sáng sớm thì chúc ngày mới năng suất, v.v.)."
+        elif action == 'login_error':
+            user_prompt = "Người dùng vừa nhập sai mật khẩu đăng nhập. Hãy an ủi nhẹ nhàng và hỏi xem họ có cần giúp đổi mật khẩu không."
+        else:
+            return jsonify({'message': 'Xin chào!'})
+            
+        chat = client.chats.create(
+            model="gemini-3.1-flash-lite-preview",
+            config=types.GenerateContentConfig(
+                system_instruction=system_prompt,
+                response_mime_type="text/plain"
+            )
+        )
+        response = chat.send_message(user_prompt)
+        return jsonify({'message': response.text.strip()})
+    except Exception as e:
+        print("Auth AI Helper Error:", e)
+        # Fallback messages
+        if action == 'greeting':
+            return jsonify({'message': 'Chào mừng bạn quay trở lại với Ketib!'})
+        return jsonify({'message': 'Mật khẩu chưa đúng, bạn kiểm tra lại nhé.'})
+
+
 @app.route('/api/auth/login', methods=['POST'])
 @limiter.limit("5 per minute")
 def login():
