@@ -1048,7 +1048,7 @@ def upload_music(current_user_id):
     file = request.files['file']
     if file.filename == '':
         return jsonify({'message': 'No selected file'}), 400
-    if file and file.filename.endswith('.mp3'):
+    if file and file.filename.lower().endswith('.mp3'):
         filename = secure_filename(f"{current_user_id}_{int(datetime.datetime.now().timestamp())}_{file.filename}")
         file.save(os.path.join(UPLOAD_FOLDER, filename))
         

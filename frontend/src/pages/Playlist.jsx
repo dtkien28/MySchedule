@@ -64,6 +64,13 @@ export default function Playlist() {
 
   const handleUploadMp3 = async () => {
     if (!file || !selectedPlaylistId) return;
+    
+    // Kiểm tra định dạng file mp3
+    if (!file.name.toLowerCase().endsWith('.mp3')) {
+      alert('Vui lòng chỉ tải lên file có định dạng .mp3!');
+      return;
+    }
+
     const formData = new FormData();
     formData.append('file', file);
     formData.append('title', newTitle || file.name);
@@ -151,7 +158,16 @@ export default function Playlist() {
               <div style={{ display: 'flex', gap: '10px', marginTop: '15px', alignItems: 'center' }}>
                 <Music size={24} style={{ color: '#3b82f6' }} />
                 <input className="input-field" style={{ marginBottom: 0, flex: 1 }} placeholder="Tên bài hát (để trống lấy tên file)" value={newTitle} onChange={e => setNewTitle(e.target.value)} />
-                <input type="file" accept=".mp3" onChange={e => setFile(e.target.files[0])} />
+                <input type="file" accept=".mp3" onChange={e => {
+                  const selectedFile = e.target.files[0];
+                  if (selectedFile && !selectedFile.name.toLowerCase().endsWith('.mp3')) {
+                    alert('Vui lòng chỉ chọn file có định dạng .mp3!');
+                    e.target.value = null;
+                    setFile(null);
+                  } else {
+                    setFile(selectedFile);
+                  }
+                }} />
                 <button className="btn btn-primary" onClick={handleUploadMp3}>Tải MP3</button>
               </div>
             </div>
