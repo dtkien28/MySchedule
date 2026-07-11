@@ -20,9 +20,10 @@ import requests
 
 # Load environment variables
 load_dotenv()
+from google import genai
+from google.genai import types
 
-import google.generativeai as genai
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 
 app = Flask(__name__)
 
@@ -384,19 +385,24 @@ def api_chatbot(current_user_id):
           {"type": "action_add", "message": "Đã thêm môn Toán vào lịch!", "schedule_data": {"class_code": "AI101", "subject_name": "Tên Môn", "type": "LEC", "start_week": 1, "end_week": 15, "time": [{"day": "T2", "time": "07:00 - 09:00", "room": "", "cancel_weeks": []}]}}
         """
 
-        model = genai.GenerativeModel(
-            model_name='gemini-1.5-flash-latest',
-            system_instruction=system_prompt
-        )
-
         formatted_history = []
         for msg in chat_history:
-            formatted_history.append({
-                "role": "user" if msg['sender'] == 'user' else "model",
-                "parts": [msg['text']]
-            })
+            role_type = "user" if msg['sender'] == 'user' else "model"
+            formatted_history.append(
+                types.Content(
+                    role=role_type,
+                    parts=[types.Part.from_text(text=msg['text'])]
+                )
+            )
 
-        chat = model.start_chat(history=formatted_history)
+        chat = client.chats.create(
+            model="gemini-1.5-flash",
+            history=formatted_history,
+            config=types.GenerateContentConfig(
+                system_instruction=system_prompt,
+                response_mime_type="application/json"
+            )
+        )
 
         current_schedules = json.dumps(page_context.get('schedules', []), ensure_ascii=False)
         full_prompt = (
@@ -405,10 +411,7 @@ def api_chatbot(current_user_id):
             f"Câu hỏi: {user_message}"
         )
 
-        response = chat.send_message(
-            full_prompt,
-            generation_config=genai.GenerationConfig(response_mime_type="application/json")
-        )
+        response = chat.send_message(full_prompt)
         
         ai_result = json.loads(response.text)
         
