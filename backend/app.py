@@ -158,7 +158,9 @@ def auth_ai_helper():
     data = request.json
     action = data.get('action') # 'greeting' or 'login_error'
     
-    current_time_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    # Calculate Vietnam time (UTC+7)
+    vn_time = datetime.datetime.utcnow() + datetime.timedelta(hours=7)
+    current_time_str = vn_time.strftime("%Y-%m-%d %H:%M:%S (Giờ Việt Nam)")
     
     try:
         system_prompt = f"""
