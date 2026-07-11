@@ -8,17 +8,27 @@
   --text-muted: #64748b;
   --border-color: rgba(226, 232, 240, 0.5);
   --sidebar-width: 250px;
+  --surface-bg: #ffffff;
+  --todo-bg: #fef08a;
+  --doing-bg: #bfdbfe;
+  --done-bg: #bbf7d0;
+  --kanban-header: #1e293b;
 }
 
 body.dark-theme {
   --primary-color: #0f172a;
   --primary-hover: #1e293b;
   --secondary-color: #38bdf8;
-  --bg-color: #1e293b;
-  --card-bg: rgba(51, 65, 85, 0.85);
+  --bg-color: #020617;
+  --card-bg: rgba(15, 23, 42, 0.85);
   --text-main: #f8fafc;
   --text-muted: #94a3b8;
-  --border-color: rgba(71, 85, 105, 0.5);
+  --border-color: rgba(30, 41, 59, 0.8);
+  --surface-bg: #0f172a;
+  --todo-bg: #422006;
+  --doing-bg: #172554;
+  --done-bg: #052e16;
+  --kanban-header: #f8fafc;
 }
 
 body.dark-theme::before {
@@ -146,13 +156,15 @@ body {
   margin-bottom: 15px;
   font-family: inherit;
   box-sizing: border-box;
+  background-color: var(--surface-bg);
+  color: var(--text-main);
 }
 
 /* Time Grid */
 .time-grid-container {
   display: flex;
   border: 1px solid var(--border-color);
-  background: white;
+  background: var(--surface-bg);
   border-radius: 8px;
   overflow: hidden;
 }
@@ -287,7 +299,7 @@ body {
   right: 30px;
   width: 350px;
   height: 450px;
-  background: white;
+  background: var(--surface-bg);
   border-radius: 12px;
   box-shadow: 0 10px 25px rgba(0,0,0,0.2);
   display: flex;
@@ -310,7 +322,7 @@ body {
 }
 .chatbot-footer {
   padding: 10px;
-  background: white;
+  background: var(--surface-bg);
   display: flex;
   gap: 10px;
   border-top: 1px solid var(--border-color);

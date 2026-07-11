@@ -125,8 +125,10 @@ export default function Groups() {
               style={{
                 padding:'15px', 
                 borderBottom:'1px solid var(--border-color)', 
-                cursor:'pointer',
-                background: selectedGroup?.id === g.id ? 'var(--bg-color)' : 'white'
+                borderRadius: '8px', 
+                background: selectedGroup?.id === g.id ? 'var(--bg-color)' : 'var(--surface-bg)',
+                border: '1px solid var(--border-color)',
+                cursor:'pointer'
               }}
               onClick={() => { setSelectedGroup(g); fetchGroupSchedule(g.id); }}
             >

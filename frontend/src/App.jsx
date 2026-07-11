@@ -17,9 +17,24 @@ function App() {
   useEffect(() => {
     // Apply user theme and bg if logged in
     const bgImage = localStorage.getItem('bgImage');
-    const theme = localStorage.getItem('theme');
+    const theme = localStorage.getItem('theme') || 'auto';
     
-    if (theme === 'dark') document.body.className = 'dark-theme';
+    const applyTheme = () => {
+      if (theme === 'dark') {
+        document.body.className = 'dark-theme';
+      } else if (theme === 'light') {
+        document.body.className = '';
+      } else {
+        const vnTime = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh" }));
+        const hour = vnTime.getHours();
+        if (hour >= 6 && hour < 18) {
+          document.body.className = '';
+        } else {
+          document.body.className = 'dark-theme';
+        }
+      }
+    };
+    applyTheme();
     
     const applyWeatherBg = () => {
       fetch('https://api.open-meteo.com/v1/forecast?latitude=16.0678&longitude=108.2208&current_weather=true')

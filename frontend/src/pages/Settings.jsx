@@ -3,7 +3,7 @@ import api from '../api';
 
 export default function Settings() {
   const [displayName, setDisplayName] = useState(localStorage.getItem('displayName') || '');
-  const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
+  const [theme, setTheme] = useState(localStorage.getItem('theme') || 'auto');
   const [bgImage, setBgImage] = useState(localStorage.getItem('bgImage') || '');
   const [streak, setStreak] = useState(parseInt(localStorage.getItem('streak')) || 0);
   
@@ -41,7 +41,21 @@ export default function Settings() {
       localStorage.setItem('bgImage', bgImage);
       
       // Apply theme and bg immediately
-      document.body.className = theme === 'dark' ? 'dark-theme' : '';
+      if (theme === 'dark') {
+        document.body.className = 'dark-theme';
+      } else if (theme === 'light') {
+        document.body.className = '';
+      } else {
+        // Auto
+        const vnTime = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh" }));
+        const hour = vnTime.getHours();
+        if (hour >= 6 && hour < 18) {
+          document.body.className = '';
+        } else {
+          document.body.className = 'dark-theme';
+        }
+      }
+
       if (bgImage) {
         document.body.style.backgroundImage = `url('/images/${bgImage}')`;
       } else {
@@ -93,6 +107,7 @@ export default function Settings() {
         <div style={{ marginTop: '15px' }}>
           <label>Chế độ Sáng/Tối:</label>
           <select className="input-field" value={theme} onChange={e => setTheme(e.target.value)}>
+            <option value="auto">Tự động (Theo thời gian)</option>
             <option value="light">Sáng (Light)</option>
             <option value="dark">Tối (Dark)</option>
           </select>

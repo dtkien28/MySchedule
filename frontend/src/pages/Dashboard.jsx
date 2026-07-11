@@ -262,15 +262,15 @@ export default function Dashboard() {
     const cols = tasks.filter(t => t.status === statusValue);
     
     let bgColor = 'var(--bg-color)';
-    if (statusValue === 'todo') bgColor = '#fef08a'; // Yellow 200
-    if (statusValue === 'doing') bgColor = '#bfdbfe'; // Blue 200
-    if (statusValue === 'done') bgColor = '#bbf7d0'; // Green 200
+    if (statusValue === 'todo') bgColor = 'var(--todo-bg)';
+    if (statusValue === 'doing') bgColor = 'var(--doing-bg)';
+    if (statusValue === 'done') bgColor = 'var(--done-bg)';
 
     return (
       <div style={{flex: 1, background: bgColor, padding: '10px', borderRadius: '8px', border: '1px solid var(--border-color)'}}>
-        <h4 style={{marginTop: 0, textAlign: 'center', color: '#1e293b'}}>{statusTitle} ({cols.length})</h4>
+        <h4 style={{marginTop: 0, textAlign: 'center', color: 'var(--kanban-header)'}}>{statusTitle} ({cols.length})</h4>
         {cols.map(t => (
-          <div key={t.id} style={{background: 'white', padding: '10px', borderRadius: '6px', marginBottom: '10px', border: '1px solid var(--border-color)'}}>
+          <div key={t.id} style={{background: 'var(--surface-bg)', padding: '10px', borderRadius: '6px', marginBottom: '10px', border: '1px solid var(--border-color)'}}>
             <div style={{display: 'flex', justifyContent: 'space-between'}}>
               <div>
                 <strong style={{textDecoration: statusValue==='done' ? 'line-through' : 'none', display: 'block'}}>{t.title}</strong>
