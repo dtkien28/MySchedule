@@ -375,14 +375,18 @@ def api_chatbot(current_user_id):
     page_context = data.get('page_context', {})
 
     try:
+        current_time_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        
         # 1. System Prompt
-        system_prompt = """
+        system_prompt = f"""
         Bạn là Ketib AI, trợ lý học tập thông minh. Nhiệm vụ của bạn là tư vấn, giải đáp lịch học và giúp người dùng thêm lịch học mới.
+        Bối cảnh thời gian hiện tại của người dùng là: {current_time_str}
+        
         BẠN BẮT BUỘC PHẢI TRẢ VỀ DỮ LIỆU ĐỊNH DẠNG JSON.
         - Nếu người dùng chỉ hỏi đáp bình thường:
-          {"type": "chat", "message": "Câu trả lời của bạn", "schedule_data": null}
+          {{"type": "chat", "message": "Câu trả lời của bạn", "schedule_data": null}}
         - Nếu người dùng nhờ THÊM/TẠO một môn học mới (ví dụ: 'thêm môn Toán sáng mai 7h'):
-          {"type": "action_add", "message": "Đã thêm môn Toán vào lịch!", "schedule_data": {"class_code": "AI101", "subject_name": "Tên Môn", "type": "LEC", "start_week": 1, "end_week": 15, "time": [{"day": "T2", "time": "07:00 - 09:00", "room": "", "cancel_weeks": []}]}}
+          {{"type": "action_add", "message": "Đã thêm môn Toán vào lịch!", "schedule_data": {{"class_code": "AI101", "subject_name": "Tên Môn", "type": "LEC", "start_week": 1, "end_week": 15, "time": [{{"day": "T2", "time": "07:00 - 09:00", "room": "", "cancel_weeks": []}}]}}}}
         """
 
         formatted_history = []
