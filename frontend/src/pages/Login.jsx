@@ -45,19 +45,16 @@ export default function Login({ setToken }) {
     const vnTimeStr = new Date().toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh" });
     const vnHour = new Date(vnTimeStr).getHours();
     
-    // Gradient thay đổi theo giờ
+    // Gradient thay đổi theo giờ (Kết hợp nhiều màu tạo hiệu ứng tuyến tính / neon)
     if (vnHour >= 5 && vnHour < 12) {
-        // Sáng
-        return 'linear-gradient(135deg, #f6d365 0%, #fda085 100%)';
+        // Buổi sáng: Trắng sáng kết hợp xanh lam nhạt (tươi mới)
+        return 'linear-gradient(135deg, #ffffff 0%, #e0eafc 50%, #cfdef3 100%)';
     } else if (vnHour >= 12 && vnHour < 18) {
-        // Chiều
-        return 'linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%)';
-    } else if (vnHour >= 18 && vnHour < 22) {
-        // Tối
-        return 'linear-gradient(135deg, #ff758c 0%, #ff7eb3 100%)';
+        // Buổi chiều: Vàng neon kết hợp cam nhạt
+        return 'linear-gradient(135deg, #ffe259 0%, #ffa751 50%, #ff8235 100%)';
     } else {
-        // Đêm
-        return 'linear-gradient(135deg, #30cfd0 0%, #330867 100%)';
+        // Buổi tối / Đêm: Đen sâu kết hợp xanh lam bóng đêm (hiệu ứng bóng tối / neon ngầm)
+        return 'linear-gradient(135deg, #000000 0%, #0f2027 50%, #2c5364 100%)';
     }
   }, []);
 
