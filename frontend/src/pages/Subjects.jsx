@@ -54,9 +54,20 @@ export default function Subjects() {
   const parseData = async () => {
     try {
       const res = await api.post('/subjects/parse', { raw_text: rawText });
+      
       if (res.data.status === 'success') {
         setFormData(res.data.data);
-        toast.success('Phân tích tự động thành công!');
+        
+        if (res.data.ai_error) {
+          console.error("Lỗi kết nối Camber AI:", res.data.ai_error);
+          toast.error("Không kết nối được AI. Chuyển sang phân tích thủ công.", { duration: 2000 });
+          
+          setTimeout(() => {
+            toast.success("Phân tích thành công!");
+          }, 1000);
+        } else {
+          toast.success("AI Phân tích thành công!");
+        }
       } else {
         toast.error(res.data.message);
       }
@@ -99,7 +110,7 @@ export default function Subjects() {
       setFormData({ class_code: '', subject_name: '', type: '', start_week: '', end_week: '', time: [] });
       loadData();
     } catch (e) {
-      toast.error('Lỗi khi lưu!');
+      toast.error(e.response?.data?.message || 'Lỗi khi lưu!');
       console.error(e);
     }
   };

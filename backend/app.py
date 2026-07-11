@@ -312,6 +312,7 @@ def api_parse_subject(current_user_id):
     # Lấy đường link public của Camber Node từ biến môi trường
     camber_node_url = os.getenv("CAMBER_NODE_URL")
     
+    ai_error = None
     if camber_node_url:
         try:
             # Bắn request thẳng vào endpoint /extract của máy chủ GPU FastAPI
@@ -345,13 +346,21 @@ def api_parse_subject(current_user_id):
                     }
                 })
             else:
-                print("Lỗi phân tích từ Camber AI:", response_data.get("message"))
+                ai_error = f"Lỗi phân tích từ Camber AI: {response_data.get('message')}"
+                print(ai_error)
                 
         except Exception as e:
-            print("Không thể kết nối đến Camber Node:", e)
+            ai_error = f"Không thể kết nối đến Camber Node: {str(e)}"
+            print(ai_error)
+    else:
+        ai_error = "Chưa cấu hình CAMBER_NODE_URL"
+        print(ai_error)
 
     # Nếu máy chủ AI tắt, mất kết nối, hoặc chưa cấu hình URL -> Tự động Fallback về Regex nội bộ
-    return jsonify(parse_dtu_string(raw_text))
+    fallback_result = parse_dtu_string(raw_text)
+    if ai_error:
+        fallback_result["ai_error"] = ai_error
+    return jsonify(fallback_result)
 
 @app.route('/api/subjects', methods=['GET'])
 @token_required
@@ -385,6 +394,53 @@ def get_subjects(current_user_id):
     conn.close()
     return jsonify(result)
 
+def check_schedule_conflict(conn, user_id, start_week, end_week, time_slots, ignore_subject_id=None):
+    cursor = conn.cursor()
+    query = 'SELECT * FROM subjects WHERE user_id = %s'
+    params = [user_id]
+    if ignore_subject_id:
+        query += ' AND id != %s'
+        params.append(ignore_subject_id)
+        
+    cursor.execute(query, tuple(params))
+    existing_subjects = cursor.fetchall()
+    
+    for ext_sub in existing_subjects:
+        ext_start_week = ext_sub['start_week']
+        ext_end_week = ext_sub['end_week']
+        
+        cursor.execute('SELECT * FROM study_times WHERE subject_id = %s', (ext_sub['id'],))
+        ext_times = cursor.fetchall()
+        
+        for nt in time_slots:
+            time_parts = nt['time'].split('-')
+            nt_start = time_parts[0].strip()
+            nt_end = time_parts[1].strip() if len(time_parts) > 1 else nt_start
+            if not nt_start or not nt_end:
+                continue
+                
+            nt_day = nt['day']
+            nt_cancel_weeks = nt.get('cancel_weeks', [])
+            if isinstance(nt_cancel_weeks, str):
+                try:
+                    nt_cancel_weeks = json.loads(nt_cancel_weeks)
+                except:
+                    nt_cancel_weeks = []
+            
+            nt_active_weeks = set(range(start_week, end_week + 1)) - set(nt_cancel_weeks)
+            
+            for et in ext_times:
+                if et['day'] == nt_day:
+                    if nt_start < et['time_end'] and et['time_start'] < nt_end:
+                        et_cancel_weeks = json.loads(et['cancel_weeks']) if et['cancel_weeks'] else []
+                        et_active_weeks = set(range(ext_start_week, ext_end_week + 1)) - set(et_cancel_weeks)
+                        
+                        intersect_weeks = nt_active_weeks.intersection(et_active_weeks)
+                        if intersect_weeks:
+                            week_conflict = sorted(list(intersect_weeks))[0]
+                            return f"Trùng lịch với môn '{ext_sub['subject_name']}' vào {nt_day} ({et['time_start']}-{et['time_end']}) tại tuần {week_conflict}"
+    return None
+
 @app.route('/api/subjects', methods=['POST'])
 @token_required
 def add_subject(current_user_id):
@@ -401,6 +457,11 @@ def add_subject(current_user_id):
         e_week = int(data.get('end_week') or 52)
     except (ValueError, TypeError):
         e_week = 52
+
+    conflict = check_schedule_conflict(conn, current_user_id, s_week, e_week, data.get('time', []))
+    if conflict:
+        conn.close()
+        return jsonify({'status': 'error', 'message': conflict}), 400
 
     cursor.execute('''
         INSERT INTO subjects (user_id, class_code, subject_name, type, start_week, end_week)
@@ -443,6 +504,11 @@ def edit_subject(current_user_id):
         e_week = int(data.get('end_week') or 52)
     except (ValueError, TypeError):
         e_week = 52
+
+    conflict = check_schedule_conflict(conn, current_user_id, s_week, e_week, data.get('time', []), ignore_subject_id=subject_id)
+    if conflict:
+        conn.close()
+        return jsonify({'status': 'error', 'message': conflict}), 400
 
     # Update main table
     cursor.execute('''
