@@ -62,7 +62,7 @@ export default function Dashboard() {
       .then(res => setGreetingText(res.data.message))
       .catch(err => console.error(err));
 
-    fetch('https://api.open-meteo.com/v1/forecast?latitude=16.0678&longitude=108.2208&current_weather=true')
+    fetch('https://api.open-meteo.com/v1/forecast?latitude=16.0678&longitude=108.2208&current_weather=true&timezone=Asia%2FHo_Chi_Minh')
       .then(res => res.json())
       .then(data => {
         const temp = data.current_weather.temperature;
