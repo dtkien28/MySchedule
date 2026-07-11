@@ -58,7 +58,11 @@ export default function Dashboard() {
     fetchData();
     const handleReload = () => fetchData();
     window.addEventListener('reloadSubjects', handleReload);
-    return () => window.removeEventListener('reloadSubjects', handleReload);
+    window.addEventListener('reloadTasks', handleReload);
+    return () => {
+      window.removeEventListener('reloadSubjects', handleReload);
+      window.removeEventListener('reloadTasks', handleReload);
+    };
   }, [currentWeek]);
 
   const fetchData = async () => {

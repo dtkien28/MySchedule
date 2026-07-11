@@ -20,16 +20,20 @@ export default function AIChatbot() {
     setIsLoading(true);
     
     try {
-      // 1. Lấy dữ liệu lịch học đang hiển thị trên giao diện
+      // 1. Lấy dữ liệu lịch học và công việc đang hiển thị
       const subjRes = await api.get('/subjects');
       const currentSchedules = subjRes.data;
+      
+      const tasksRes = await api.get('/tasks');
+      const currentTasks = tasksRes.data;
       
       // 2. Gom gói hàng để gửi lên Render
       const payload = {
         message: userText,
         history: messages,
         page_context: {
-          schedules: currentSchedules
+          schedules: currentSchedules,
+          tasks: currentTasks
         }
       };
 
@@ -40,14 +44,41 @@ export default function AIChatbot() {
       if (data.status === "success") {
         setMessages([...newMessages, { sender: 'ai', text: data.reply }]);
 
-        // Kiểm tra xem AI có "ra lệnh" thêm lịch không
-        if (data.type === "action_add" && data.action_data) {
+        // Kiểm tra xem AI có "ra lệnh" thêm/xóa lịch hoặc công việc không
+        if (data.type === "action_add_subject" && data.action_data) {
           try {
             await api.post('/subjects', data.action_data);
-            toast.success("AI đã thêm môn học mới thành công!");
+            toast.success("AI đã thêm môn học thành công!");
             window.dispatchEvent(new Event('reloadSubjects'));
           } catch (e) {
             toast.error("AI tạo môn học thất bại!");
+            console.error(e);
+          }
+        } else if (data.type === "action_delete_subject" && data.action_data?.id) {
+          try {
+            await api.delete(`/subjects/${data.action_data.id}`);
+            toast.success("AI đã xóa môn học thành công!");
+            window.dispatchEvent(new Event('reloadSubjects'));
+          } catch (e) {
+            toast.error("AI xóa môn học thất bại!");
+            console.error(e);
+          }
+        } else if (data.type === "action_add_task" && data.action_data) {
+          try {
+            await api.post('/tasks', data.action_data);
+            toast.success("AI đã thêm công việc thành công!");
+            window.dispatchEvent(new Event('reloadTasks'));
+          } catch (e) {
+            toast.error("AI tạo công việc thất bại!");
+            console.error(e);
+          }
+        } else if (data.type === "action_delete_task" && data.action_data?.id) {
+          try {
+            await api.delete(`/tasks/${data.action_data.id}`);
+            toast.success("AI đã xóa công việc thành công!");
+            window.dispatchEvent(new Event('reloadTasks'));
+          } catch (e) {
+            toast.error("AI xóa công việc thất bại!");
             console.error(e);
           }
         }
