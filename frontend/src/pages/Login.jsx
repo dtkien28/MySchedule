@@ -115,7 +115,8 @@ export default function Login({ setToken }) {
           const res = await api.post('/auth/verify', { user_id: tempUserId, code: otpCode });
           toast.success(res.data.message);
           setShowOTP(false);
-          setIsLogin(true);
+          setIsFlipped(false);
+          setTimeout(() => setIsLogin(true), 150);
           setPassword('');
           setConfirmPassword('');
       } catch (error) {
@@ -209,32 +210,14 @@ export default function Login({ setToken }) {
             }}>
                 <div style={{ textAlign: 'center', marginBottom: '30px' }}>
                     <h2 style={{ color: themeColors.heading, fontSize: '28px', fontWeight: 'bold', margin: '0 0 10px 0' }}>
-                        {showOTP ? 'Xác thực Email ✉️' : 'Ketib Schedule - Kính mời bạn Đăng nhập'}
+                        Ketib Schedule - Kính mời bạn Đăng nhập
                     </h2>
                     <p style={{ color: themeColors.subtitle, fontSize: '15px', margin: 0, minHeight: '45px' }}>
-                        {showOTP ? 'Vui lòng kiểm tra email của bạn để lấy mã OTP' : <>{typedGreeting}<span className="blink-cursor">|</span></>}
+                        <>{typedGreeting}<span className="blink-cursor">|</span></>
                     </p>
                 </div>
 
-                {showOTP ? (
-                    <form onSubmit={handleVerifyOTP}>
-                    <div style={{ marginBottom: '20px' }}>
-                        <input 
-                        type="text" 
-                        placeholder="Nhập mã OTP (6 số)" 
-                        style={{ width: '100%', padding: '14px 20px', borderRadius: '12px', border: `1px solid ${themeColors.inputBorder}`, fontSize: '16px', outline: 'none', background: themeColors.inputBg, color: themeColors.inputText, boxSizing: 'border-box' }}
-                        value={otpCode}
-                        onChange={e => setOtpCode(e.target.value)}
-                        required
-                        />
-                    </div>
-                    <button type="submit" style={primaryBtnStyle}>
-                        Xác nhận OTP
-                    </button>
-                    </form>
-                ) : (
-                    <>
-                    <form onSubmit={(e) => handleSubmit(e, 'login')}>
+                <form onSubmit={(e) => handleSubmit(e, 'login')}>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginBottom: '15px' }}>
                             <input 
                                 type="text" 
@@ -293,8 +276,6 @@ export default function Login({ setToken }) {
                             Đăng ký ngay
                         </span>
                     </p>
-                    </>
-                )}
             </div>
 
             {/* MẶT SAU: REGISTER */}
@@ -316,14 +297,32 @@ export default function Login({ setToken }) {
             }}>
                 <div style={{ textAlign: 'center', marginBottom: '30px' }}>
                     <h2 style={{ color: themeColors.heading, fontSize: '28px', fontWeight: 'bold', margin: '0 0 10px 0' }}>
-                        Tạo tài khoản mới ✨
+                        {showOTP ? 'Xác thực Email ✉️' : 'Tạo tài khoản mới ✨'}
                     </h2>
                     <p style={{ color: themeColors.subtitle, fontSize: '15px', margin: 0 }}>
-                        Bắt đầu hành trình quản lý thời gian ngay hôm nay.
+                        {showOTP ? 'Vui lòng kiểm tra email của bạn để lấy mã OTP' : 'Bắt đầu hành trình quản lý thời gian ngay hôm nay.'}
                     </p>
                 </div>
 
-                <form onSubmit={(e) => handleSubmit(e, 'register')}>
+                {showOTP ? (
+                    <form onSubmit={handleVerifyOTP}>
+                    <div style={{ marginBottom: '20px' }}>
+                        <input 
+                        type="text" 
+                        placeholder="Nhập mã OTP (6 số)" 
+                        style={{ width: '100%', padding: '14px 20px', borderRadius: '12px', border: `1px solid ${themeColors.inputBorder}`, fontSize: '16px', outline: 'none', background: themeColors.inputBg, color: themeColors.inputText, boxSizing: 'border-box' }}
+                        value={otpCode}
+                        onChange={e => setOtpCode(e.target.value)}
+                        required
+                        />
+                    </div>
+                    <button type="submit" style={primaryBtnStyle}>
+                        Xác nhận OTP
+                    </button>
+                    </form>
+                ) : (
+                    <>
+                    <form onSubmit={(e) => handleSubmit(e, 'register')}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginBottom: '25px' }}>
                         <input 
                             type="text" 
@@ -377,6 +376,8 @@ export default function Login({ setToken }) {
                         Đăng nhập
                     </span>
                 </p>
+                </>
+                )}
             </div>
 
         </div>
