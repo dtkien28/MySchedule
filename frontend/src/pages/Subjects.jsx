@@ -22,6 +22,7 @@ export default function Subjects() {
   const [rawText, setRawText] = useState('');
   const [formData, setFormData] = useState({ class_code: '', subject_name: '', type: '', start_week: '', end_week: '', time: [] });
   const [editId, setEditId] = useState(null);
+  const [aiStatus, setAiStatus] = useState(null);
   
   const ACADEMIC_OFFSET = 20;
   const getWeekNumber = (d) => {
@@ -49,6 +50,13 @@ export default function Subjects() {
     try {
       const res = await api.get('/subjects');
       setSubjects(res.data);
+    } catch (e) {
+      console.error(e);
+    }
+    
+    try {
+      const statusRes = await api.get('/subjects/ai_status');
+      setAiStatus(statusRes.data);
     } catch (e) {
       console.error(e);
     }
@@ -251,7 +259,15 @@ export default function Subjects() {
         {/* Form phía trên */}
         <div style={{width: '100%'}}>
           <div className="card">
-            <h3>Smart Paste (Dán dữ liệu từ DTU)</h3>
+            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px'}}>
+              <h3 style={{margin: 0}}>Smart Paste (Dán dữ liệu từ DTU)</h3>
+              {aiStatus && (
+                <div style={{fontSize: '0.85rem', color: aiStatus.status === 'Sẵn sàng' ? 'var(--secondary-color)' : '#f87171', background: 'var(--bg-color)', padding: '5px 10px', borderRadius: '6px', border: '1px solid var(--border-color)', textAlign: 'right'}}>
+                  <div>Môi trường thực thi - <strong>{aiStatus.env}</strong></div>
+                  <div>Trạng thái - <strong>{aiStatus.status}</strong></div>
+                </div>
+              )}
+            </div>
             <textarea 
               className="input-field" 
               rows="4" 

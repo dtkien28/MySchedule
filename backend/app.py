@@ -365,58 +365,99 @@ def api_parse_subject(current_user_id):
     data = request.json
     raw_text = data.get('raw_text', '')
 
-    # Lấy đường link public của Camber Node từ biến môi trường
+    kaggle_node_url = os.getenv("KAGGLE_NODE_URL")
     camber_node_url = os.getenv("CAMBER_NODE_URL")
     
     ai_error = None
-    if camber_node_url:
-        try:
-            # Bắn request thẳng vào endpoint /extract của máy chủ GPU FastAPI
-            api_endpoint = f"{camber_node_url.rstrip('/')}/extract"
-            
-            response = requests.post(api_endpoint, json={"raw_text": raw_text}, timeout=30)
-            response_data = response.json()
-            
-            if response_data.get("status") == "success":
-                parsed_ai = response_data["data"]
-                
-                # Map cấu trúc JSON của AI sang cấu trúc mảng time[] mà Frontend đang dùng
-                time_slots = []
-                for s in parsed_ai.get('schedules', []):
-                    time_slots.append({
-                        "day": s.get('day_of_week', ''),
-                        "time": f"{s.get('start_time', '')}-{s.get('end_time', '')}",
-                        "room": f"{s.get('room', '')} {s.get('location', '')}".strip(),
-                        "cancel_weeks": s.get('canceled_weeks', [])
-                    })
-
-                return jsonify({
-                    "status": "success",
-                    "data": {
-                        "class_code": parsed_ai.get('class_name', ''),
-                        "subject_name": parsed_ai.get('subject_name', ''),
-                        "type": parsed_ai.get('type', ''),
-                        "start_week": parsed_ai.get('start_week', 1),
-                        "end_week": parsed_ai.get('end_week', 52),
-                        "time": time_slots
-                    }
+    parsed_ai = None
+    
+    def call_ai_node(node_url):
+        api_endpoint = f"{node_url.rstrip('/')}/extract"
+        response = requests.post(api_endpoint, json={"raw_text": raw_text}, timeout=30)
+        return response.json()
+        
+    def process_ai_response(response_data):
+        if response_data.get("status") == "success":
+            p_ai = response_data["data"]
+            time_slots = []
+            for s in p_ai.get('schedules', []):
+                time_slots.append({
+                    "day": s.get('day_of_week', ''),
+                    "time": f"{s.get('start_time', '')}-{s.get('end_time', '')}",
+                    "room": f"{s.get('room', '')} {s.get('location', '')}".strip(),
+                    "cancel_weeks": s.get('canceled_weeks', [])
                 })
+            return {
+                "class_code": p_ai.get('class_name', ''),
+                "subject_name": p_ai.get('subject_name', ''),
+                "type": p_ai.get('type', ''),
+                "start_week": p_ai.get('start_week', 1),
+                "end_week": p_ai.get('end_week', 52),
+                "time": time_slots
+            }
+        return None
+
+    # Cố gắng sử dụng Kaggle Node trước tiên
+    if kaggle_node_url:
+        try:
+            res_data = call_ai_node(kaggle_node_url)
+            parsed_ai = process_ai_response(res_data)
+            if not parsed_ai:
+                ai_error = f"Lỗi phân tích từ Kaggle AI: {res_data.get('message')}"
+        except Exception as e:
+            ai_error = f"Không thể kết nối đến Kaggle Node: {str(e)}"
+            print(ai_error)
+
+    # Nếu Kaggle thất bại hoặc không có, thử sử dụng Camber Node
+    if not parsed_ai and camber_node_url:
+        try:
+            res_data = call_ai_node(camber_node_url)
+            parsed_ai = process_ai_response(res_data)
+            if parsed_ai:
+                ai_error = None # Xóa lỗi của Kaggle nếu Camber thành công
             else:
-                ai_error = f"Lỗi phân tích từ Camber AI: {response_data.get('message')}"
-                print(ai_error)
-                
+                ai_error = f"Lỗi phân tích từ Camber AI: {res_data.get('message')}"
         except Exception as e:
             ai_error = f"Không thể kết nối đến Camber Node: {str(e)}"
             print(ai_error)
-    else:
-        ai_error = "Chưa cấu hình CAMBER_NODE_URL"
+
+    if not parsed_ai and not kaggle_node_url and not camber_node_url:
+        ai_error = "Chưa cấu hình KAGGLE_NODE_URL hoặc CAMBER_NODE_URL"
         print(ai_error)
+
+    if parsed_ai:
+        return jsonify({
+            "status": "success",
+            "data": parsed_ai
+        })
 
     # Nếu máy chủ AI tắt, mất kết nối, hoặc chưa cấu hình URL -> Tự động Fallback về Regex nội bộ
     fallback_result = parse_dtu_string(raw_text)
     if ai_error:
         fallback_result["ai_error"] = ai_error
     return jsonify(fallback_result)
+
+@app.route('/api/subjects/ai_status', methods=['GET'])
+@token_required
+def get_ai_status(current_user_id):
+    kaggle_url = os.getenv("KAGGLE_NODE_URL")
+    camber_url = os.getenv("CAMBER_NODE_URL")
+    
+    if kaggle_url:
+        try:
+            requests.get(kaggle_url.rstrip('/') + "/", timeout=5)
+            return jsonify({"env": "Kaggle", "status": "Sẵn sàng"})
+        except Exception:
+            return jsonify({"env": "Kaggle", "status": "Không thể kết nối"})
+
+    if camber_url:
+        try:
+            requests.get(camber_url.rstrip('/') + "/", timeout=5)
+            return jsonify({"env": "Camber Cloud", "status": "Sẵn sàng"})
+        except Exception:
+            return jsonify({"env": "Camber Cloud", "status": "Không thể kết nối"})
+            
+    return jsonify({"env": "Local", "status": "Sẵn sàng"})
 
 @app.route('/api/chatbot/chat', methods=['POST'])
 @token_required
