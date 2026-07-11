@@ -174,6 +174,13 @@ def auth_ai_helper():
             user_prompt = "Hãy viết một câu chào mừng ngắn gọn cho người dùng đang ở trang đăng nhập. Dựa vào giờ hiện tại để có lời chào phù hợp (ví dụ đêm muộn thì hỏi sao còn thức, sáng sớm thì chúc ngày mới năng suất, v.v.)."
         elif action == 'login_error':
             user_prompt = "Người dùng vừa nhập sai mật khẩu đăng nhập. Hãy an ủi nhẹ nhàng và hỏi xem họ có cần giúp đổi mật khẩu không."
+        elif action == 'dashboard_greeting':
+            name = data.get('name', 'bạn')
+            user_prompt = f"Hãy viết một câu chào mừng ngắn gọn (khoảng 1 câu), truyền động lực học tập và làm việc cho người dùng tên là {name} khi họ vừa vào trang quản lý (Dashboard). Dựa vào giờ hiện tại để có lời chào phù hợp."
+        elif action == 'weather_report':
+            weather_data = data.get('weather_data', {})
+            temp = weather_data.get('temperature', '')
+            user_prompt = f"Trời đang {temp}°C. Hãy viết 1 câu siêu ngắn gọn và thân thiện thông báo thời tiết (có thể kèm lời khuyên nhỏ) để góc trên màn hình. Tuyệt đối chỉ 1 câu, không dài dòng."
         else:
             return jsonify({'message': 'Xin chào!'})
             
@@ -191,6 +198,10 @@ def auth_ai_helper():
         # Fallback messages
         if action == 'greeting':
             return jsonify({'message': 'Chào mừng bạn quay trở lại với Ketib!'})
+        elif action == 'dashboard_greeting':
+            return jsonify({'message': f"Chào mừng {data.get('name', 'bạn')}! Chúc bạn một ngày hiệu quả!"})
+        elif action == 'weather_report':
+            return jsonify({'message': 'Thời tiết hôm nay khá đẹp, chúc bạn một ngày năng suất!'})
         return jsonify({'message': 'Mật khẩu chưa đúng, bạn kiểm tra lại nhé.'})
 
 

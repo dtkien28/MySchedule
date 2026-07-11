@@ -162,7 +162,7 @@ export default function Login({ setToken }) {
           padding: '40px',
           position: 'relative'
       }}>
-          <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.4)' }}></div>
+          <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', background: isDarkBackground ? 'rgba(0,0,0,0.7)' : 'rgba(0,0,0,0.4)' }}></div>
           <div style={{ zIndex: 1, textAlign: 'center' }}>
               <div style={{ fontSize: '4rem', fontWeight: '900', marginBottom: '20px', letterSpacing: '2px', textShadow: '0 4px 15px rgba(0,0,0,0.3)' }}>Ketib Schedule</div>
               <p style={{ fontSize: '1.2rem', maxWidth: '80%', margin: '0 auto', lineHeight: '1.6', opacity: 0.9 }}>

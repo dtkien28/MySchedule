@@ -53,6 +53,25 @@ export default function Dashboard() {
   const [newTaskTimeStart, setNewTaskTimeStart] = useState('');
   const [newTaskTimeEnd, setNewTaskTimeEnd] = useState('');
   const username = localStorage.getItem('username');
+  
+  const [greetingText, setGreetingText] = useState(`Chào mừng, ${localStorage.getItem('displayName') || username}!`);
+  const [weatherText, setWeatherText] = useState('');
+
+  useEffect(() => {
+    api.post('/auth/ai-helper', { action: 'dashboard_greeting', name: localStorage.getItem('displayName') || username })
+      .then(res => setGreetingText(res.data.message))
+      .catch(err => console.error(err));
+
+    fetch('https://api.open-meteo.com/v1/forecast?latitude=16.0678&longitude=108.2208&current_weather=true')
+      .then(res => res.json())
+      .then(data => {
+        const temp = data.current_weather.temperature;
+        api.post('/auth/ai-helper', { action: 'weather_report', weather_data: { temperature: temp } })
+          .then(res => setWeatherText(res.data.message))
+          .catch(err => console.error(err));
+      })
+      .catch(err => console.error(err));
+  }, [username]);
 
   useEffect(() => {
     fetchData();
@@ -303,7 +322,7 @@ export default function Dashboard() {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
         <div>
-            <h1 style={{ marginBottom: '5px' }}>Chào mừng, {localStorage.getItem('displayName') || username}!</h1>
+            <h1 style={{ marginBottom: '5px' }}>{greetingText}</h1>
             <p style={{ color: 'var(--primary-color)', fontWeight: 'bold', margin: '0 0 10px 0', fontSize: '1.1rem' }}>
               🔥 Chuỗi Streak: {localStorage.getItem('streak') || 0} ngày
             </p>
@@ -322,7 +341,14 @@ export default function Dashboard() {
             ) : null}
         </div>
         
-        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}></div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+            {weatherText && (
+               <div style={{ background: 'var(--surface-bg)', padding: '10px 20px', borderRadius: '12px', border: '1px solid var(--border-color)', boxShadow: '0 4px 6px rgba(0,0,0,0.05)', maxWidth: '350px', textAlign: 'right' }}>
+                   <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '5px' }}>☁️ Thời tiết hiện tại</div>
+                   <div style={{ fontSize: '0.95rem', fontWeight: '500', color: 'var(--text-color)' }}>{weatherText}</div>
+               </div>
+            )}
+        </div>
       </div>
       
       <div style={{display: 'flex', gap: '20px', height: 'calc(100vh - 120px)'}}>

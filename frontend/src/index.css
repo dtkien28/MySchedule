@@ -32,13 +32,13 @@ body.dark-theme {
 }
 
 body.dark-theme::before {
-  content: \'\';
+  content: '';
   position: fixed;
   top: 0;
   left: 0;
   width: 100vw;
   height: 100vh;
-  background-color: rgba(0, 0, 0, 0.65);
+  background-color: rgba(0, 0, 0, 0.85);
   z-index: -1;
   pointer-events: none;
 }
