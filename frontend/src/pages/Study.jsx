@@ -254,6 +254,11 @@ export default function Study() {
       return isNaN(offset) ? 0 : offset;
   };
 
+  const youtubeInitialOffset = React.useMemo(() => {
+      return getMusicStartTimeOffset();
+  }, [currentMusic?.start_time]);
+
+
   const handleLeaveRoom = async () => {
     if (inRoom) {
       try {
@@ -345,7 +350,7 @@ export default function Study() {
             {currentMusic?.type === 'youtube' && isStarted && (
               <iframe 
                 width="100%" height="200" 
-                src={`https://www.youtube.com/embed/${extractYoutubeId(currentMusic.youtube_url)}?autoplay=1&start=${getMusicStartTimeOffset()}`} 
+                src={`https://www.youtube.com/embed/${extractYoutubeId(currentMusic.youtube_url)}?autoplay=1&start=${youtubeInitialOffset}`} 
                 frameBorder="0" allow="autoplay; encrypted-media" allowFullScreen
                 style={{ borderRadius: '8px' }}
               ></iframe>
