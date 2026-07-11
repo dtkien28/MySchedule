@@ -20,7 +20,7 @@ const getDayIndex = (day) => {
 export default function Subjects() {
   const [subjects, setSubjects] = useState([]);
   const [rawText, setRawText] = useState('');
-  const [formData, setFormData] = useState({ class_code: '', subject_name: '', type: '', start_week: '', end_week: '', time: [] });
+  const [formData, setFormData] = useState({ class_code: '', subject_name: '', type: '', start_week: '', end_week: '', room: '', time: [] });
   const [editId, setEditId] = useState(null);
   
   const ACADEMIC_OFFSET = 20;
@@ -110,7 +110,7 @@ export default function Subjects() {
         await api.post('/subjects', formData);
         toast.success('Đã lưu thành công!');
       }
-      setFormData({ class_code: '', subject_name: '', type: '', start_week: '', end_week: '', time: [] });
+      setFormData({ class_code: '', subject_name: '', type: '', start_week: '', end_week: '', room: '', time: [] });
       loadData();
     } catch (e) {
       toast.error(e.response?.data?.message || 'Lỗi khi lưu!');
@@ -124,6 +124,7 @@ export default function Subjects() {
       class_code: subject.class_code,
       subject_name: subject.subject_name,
       type: subject.type || '',
+      room: subject.time.length > 0 ? subject.time[0].room : '',
       start_week: subject.start_week,
       end_week: subject.end_week,
       time: subject.time.map(t => ({ ...t, cancel_weeks: [...t.cancel_weeks] }))
@@ -272,6 +273,13 @@ export default function Subjects() {
                 <input className="input-field" style={{marginBottom: 0}} placeholder="Tên môn" value={formData.subject_name} onChange={e => setFormData({...formData, subject_name: e.target.value})} />
               </div>
               <div style={{flex: 1}}>
+                <input className="input-field" style={{marginBottom: 0}} placeholder="Phòng/Địa điểm" value={formData.room || ''} onChange={e => {
+                  const newRoom = e.target.value;
+                  const newTime = formData.time.map(t => ({...t, room: newRoom}));
+                  setFormData({...formData, room: newRoom, time: newTime});
+                }} title="Phòng học áp dụng chung" />
+              </div>
+              <div style={{flex: 1}}>
                 <input className="input-field" style={{marginBottom: 0}} placeholder="Loại (VD: LEC)" value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})} />
               </div>
             </div>
@@ -300,7 +308,7 @@ export default function Subjects() {
             <button className={editId ? "btn btn-primary" : "btn btn-primary"} style={{marginLeft:'10px', background: editId ? 'var(--secondary-color)' : 'var(--primary-color)'}} onClick={saveSubject}>
               {editId ? "Cập nhật DB" : "Lưu vào DB"}
             </button>
-            {editId && <button className="btn btn-outline" style={{marginLeft:'10px'}} onClick={() => {setEditId(null); setFormData({ class_code: '', subject_name: '', type: '', start_week: '', end_week: '', time: [] });}}>Hủy sửa</button>}
+            {editId && <button className="btn btn-outline" style={{marginLeft:'10px'}} onClick={() => {setEditId(null); setFormData({ class_code: '', subject_name: '', type: '', start_week: '', end_week: '', room: '', time: [] });}}>Hủy sửa</button>}
           </div>
           
           <div className="card">
