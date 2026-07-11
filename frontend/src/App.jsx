@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
+import api from './api';
 import Sidebar from './components/Sidebar';
 import Dashboard from './pages/Dashboard';
 import Login from './pages/Login';
@@ -79,10 +80,9 @@ function App() {
     window.addEventListener('updateWeatherBackground', handleUpdateWeather);
     
     // Fetch AI Status silently in background when app loads
-    fetch('http://localhost:5000/api/ai_status')
-      .then(res => res.json())
-      .then(data => {
-        localStorage.setItem('aiStatus', JSON.stringify(data));
+    api.get('/ai_status')
+      .then(res => {
+        localStorage.setItem('aiStatus', JSON.stringify(res.data));
         window.dispatchEvent(new Event('aiStatusUpdated'));
       })
       .catch(err => console.error("AI Status Error:", err));
