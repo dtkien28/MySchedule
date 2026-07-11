@@ -209,7 +209,7 @@ export default function Login({ setToken }) {
             }}>
                 <div style={{ textAlign: 'center', marginBottom: '30px' }}>
                     <h2 style={{ color: themeColors.heading, fontSize: '28px', fontWeight: 'bold', margin: '0 0 10px 0' }}>
-                        {showOTP ? 'Xác thực Email ✉️' : 'Ketib Schedule - Kính mời bạn Đăng nhập 👋'}
+                        {showOTP ? 'Xác thực Email ✉️' : 'Ketib Schedule - Kính mời bạn Đăng nhập'}
                     </h2>
                     <p style={{ color: themeColors.subtitle, fontSize: '15px', margin: 0, minHeight: '45px' }}>
                         {showOTP ? 'Vui lòng kiểm tra email của bạn để lấy mã OTP' : <>{typedGreeting}<span className="blink-cursor">|</span></>}
