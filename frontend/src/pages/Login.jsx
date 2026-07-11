@@ -127,6 +127,23 @@ export default function Login({ setToken }) {
       toast.error(`Tính năng đăng nhập bằng ${provider} đang được phát triển.\nVui lòng sử dụng tài khoản thường.`, { duration: 4000 });
   };
 
+  const isDarkBackground = useMemo(() => {
+    const vnTimeStr = new Date().toLocaleString("en-US", { timeZone: "Asia/Ho_Chi_Minh" });
+    const vnHour = new Date(vnTimeStr).getHours();
+    return vnHour >= 18 || vnHour < 5;
+  }, []);
+
+  const themeColors = {
+      heading: isDarkBackground ? '#ffffff' : '#1a202c',
+      subtitle: isDarkBackground ? '#e2e8f0' : '#718096',
+      inputBg: isDarkBackground ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.4)',
+      inputBorder: isDarkBackground ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)',
+      inputText: isDarkBackground ? '#ffffff' : '#1a202c',
+      formBg: isDarkBackground ? 'rgba(0, 0, 0, 0.25)' : 'rgba(255, 255, 255, 0.35)',
+      divider: isDarkBackground ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)',
+      socialBg: isDarkBackground ? 'rgba(255, 255, 255, 0.1)' : 'white'
+  };
+
   const primaryBtnStyle = { width: '100%', padding: '14px', background: '#4f46e5', color: 'white', border: 'none', borderRadius: '12px', fontSize: '16px', fontWeight: '600', cursor: 'pointer', marginTop: '10px', transition: 'background 0.3s' };
 
   return (
@@ -180,19 +197,21 @@ export default function Login({ setToken }) {
                 width: '100%',
                 height: '100%',
                 backfaceVisibility: 'hidden',
-                background: 'rgba(255, 255, 255, 0.85)', // Hiệu ứng kính mờ
-                backdropFilter: 'blur(15px)',
+                background: themeColors.formBg, // Hiệu ứng kính mờ (cực trong suốt)
+                backdropFilter: 'blur(20px)',
+                WebkitBackdropFilter: 'blur(20px)',
                 padding: '40px',
                 borderRadius: '60px 16px 60px 16px', // Bo tròn góc trên trái và dưới phải
-                boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.2)',
+                boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.2)',
+                border: `1px solid ${isDarkBackground ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.4)'}`,
                 boxSizing: 'border-box',
                 display: !isFlipped ? 'block' : 'none' // Ẩn khi lật để tối ưu
             }}>
                 <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-                    <h2 style={{ color: '#1a202c', fontSize: '28px', fontWeight: 'bold', margin: '0 0 10px 0' }}>
+                    <h2 style={{ color: themeColors.heading, fontSize: '28px', fontWeight: 'bold', margin: '0 0 10px 0' }}>
                         {showOTP ? 'Xác thực Email ✉️' : 'Ketib Schedule - Kính mời bạn Đăng nhập 👋'}
                     </h2>
-                    <p style={{ color: '#718096', fontSize: '15px', margin: 0, minHeight: '45px' }}>
+                    <p style={{ color: themeColors.subtitle, fontSize: '15px', margin: 0, minHeight: '45px' }}>
                         {showOTP ? 'Vui lòng kiểm tra email của bạn để lấy mã OTP' : <>{typedGreeting}<span className="blink-cursor">|</span></>}
                     </p>
                 </div>
@@ -203,7 +222,7 @@ export default function Login({ setToken }) {
                         <input 
                         type="text" 
                         placeholder="Nhập mã OTP (6 số)" 
-                        style={{ width: '100%', padding: '14px 20px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.4)', fontSize: '16px', outline: 'none', background: 'rgba(255,255,255,0.6)', boxSizing: 'border-box' }}
+                        style={{ width: '100%', padding: '14px 20px', borderRadius: '12px', border: `1px solid ${themeColors.inputBorder}`, fontSize: '16px', outline: 'none', background: themeColors.inputBg, color: themeColors.inputText, boxSizing: 'border-box' }}
                         value={otpCode}
                         onChange={e => setOtpCode(e.target.value)}
                         required
@@ -220,7 +239,7 @@ export default function Login({ setToken }) {
                             <input 
                                 type="text" 
                                 placeholder="Tên đăng nhập" 
-                                style={{ width: '100%', padding: '14px 20px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.4)', fontSize: '15px', outline: 'none', background: 'rgba(255,255,255,0.6)', boxSizing: 'border-box' }}
+                                style={{ width: '100%', padding: '14px 20px', borderRadius: '12px', border: `1px solid ${themeColors.inputBorder}`, fontSize: '15px', outline: 'none', background: themeColors.inputBg, color: themeColors.inputText, boxSizing: 'border-box' }}
                                 value={username}
                                 onChange={e => setUsername(e.target.value)}
                                 required
@@ -229,7 +248,7 @@ export default function Login({ setToken }) {
                                 <input 
                                     type="password" 
                                     placeholder="Mật khẩu" 
-                                    style={{ width: '100%', padding: '14px 20px', borderRadius: '12px', border: `1px solid ${aiTooltip ? '#ef4444' : 'rgba(255,255,255,0.4)'}`, fontSize: '15px', outline: 'none', background: 'rgba(255,255,255,0.6)', boxSizing: 'border-box' }}
+                                    style={{ width: '100%', padding: '14px 20px', borderRadius: '12px', border: `1px solid ${aiTooltip ? '#ef4444' : themeColors.inputBorder}`, fontSize: '15px', outline: 'none', background: themeColors.inputBg, color: themeColors.inputText, boxSizing: 'border-box' }}
                                     value={password}
                                     onChange={e => setPassword(e.target.value)}
                                     required
@@ -248,27 +267,27 @@ export default function Login({ setToken }) {
                     </form>
                     
                     <div style={{ display: 'flex', alignItems: 'center', margin: '30px 0' }}>
-                        <div style={{ flex: 1, height: '1px', background: '#cbd5e1' }}></div>
-                        <span style={{ margin: '0 15px', color: '#64748b', fontSize: '14px' }}>hoặc đăng nhập qua</span>
-                        <div style={{ flex: 1, height: '1px', background: '#cbd5e1' }}></div>
+                        <div style={{ flex: 1, height: '1px', background: themeColors.divider }}></div>
+                        <span style={{ margin: '0 15px', color: themeColors.subtitle, fontSize: '14px' }}>hoặc đăng nhập qua</span>
+                        <div style={{ flex: 1, height: '1px', background: themeColors.divider }}></div>
                     </div>
 
                     <div style={{ display: 'flex', gap: '15px', justifyContent: 'center', marginBottom: '30px' }}>
-                        <button onClick={() => handleSocialLogin('Google')} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '12px', background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', cursor: 'pointer', transition: 'background 0.2s' }}>
+                        <button onClick={() => handleSocialLogin('Google')} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '12px', background: themeColors.socialBg, border: `1px solid ${themeColors.divider}`, borderRadius: '12px', cursor: 'pointer', transition: 'background 0.2s' }}>
                             <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google" style={{width: '20px'}}/>
                         </button>
-                        <button onClick={() => handleSocialLogin('Facebook')} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '12px', background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', cursor: 'pointer', transition: 'background 0.2s' }}>
+                        <button onClick={() => handleSocialLogin('Facebook')} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '12px', background: themeColors.socialBg, border: `1px solid ${themeColors.divider}`, borderRadius: '12px', cursor: 'pointer', transition: 'background 0.2s' }}>
                             {/* Icon Facebook chuẩn SVG */}
                             <svg viewBox="0 0 24 24" width="20" height="20" xmlns="http://www.w3.org/2000/svg">
                               <path d="M22.675 0h-21.35c-.732 0-1.325.593-1.325 1.325v21.351c0 .731.593 1.324 1.325 1.324h11.495v-9.294h-3.128v-3.622h3.128v-2.671c0-3.1 1.893-4.788 4.659-4.788 1.325 0 2.463.099 2.795.143v3.24l-1.918.001c-1.504 0-1.795.715-1.795 1.763v2.313h3.587l-.467 3.622h-3.12v9.293h6.116c.73 0 1.323-.593 1.323-1.325v-21.35c0-.732-.593-1.325-1.325-1.325z" fill="#1877F2"/>
                             </svg>
                         </button>
-                        <button onClick={() => handleSocialLogin('GitHub')} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '12px', background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', cursor: 'pointer', transition: 'background 0.2s' }}>
-                            <img src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" alt="Github" style={{width: '20px'}}/>
+                        <button onClick={() => handleSocialLogin('GitHub')} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '12px', background: themeColors.socialBg, border: `1px solid ${themeColors.divider}`, borderRadius: '12px', cursor: 'pointer', transition: 'background 0.2s' }}>
+                            <img src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" alt="Github" style={{width: '20px', filter: isDarkBackground ? 'invert(1)' : 'none'}}/>
                         </button>
                     </div>
 
-                    <p style={{ textAlign: 'center', margin: '0', fontSize: '15px', color: '#475569' }}>
+                    <p style={{ textAlign: 'center', margin: '0', fontSize: '15px', color: themeColors.subtitle }}>
                         Chưa có tài khoản?
                         <span style={{ marginLeft: '8px', color: '#4f46e5', fontWeight: '800', cursor: 'pointer' }} onClick={toggleFlip}>
                             Đăng ký ngay
@@ -284,20 +303,22 @@ export default function Login({ setToken }) {
                 width: '100%',
                 height: '100%',
                 backfaceVisibility: 'hidden',
-                background: 'rgba(255, 255, 255, 0.85)', // Hiệu ứng kính mờ
-                backdropFilter: 'blur(15px)',
+                background: themeColors.formBg, // Hiệu ứng kính mờ (cực trong suốt)
+                backdropFilter: 'blur(20px)',
+                WebkitBackdropFilter: 'blur(20px)',
                 padding: '40px',
                 borderRadius: '16px 60px 16px 60px', // Bo tròn góc trên phải và dưới trái
-                boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.2)',
+                boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.2)',
+                border: `1px solid ${isDarkBackground ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.4)'}`,
                 boxSizing: 'border-box',
                 transform: 'rotateY(180deg)', // Mặt sau lộn ngược 180 độ
                 display: isFlipped ? 'block' : 'none' // Ẩn khi chưa lật
             }}>
                 <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-                    <h2 style={{ color: '#1a202c', fontSize: '28px', fontWeight: 'bold', margin: '0 0 10px 0' }}>
+                    <h2 style={{ color: themeColors.heading, fontSize: '28px', fontWeight: 'bold', margin: '0 0 10px 0' }}>
                         Tạo tài khoản mới ✨
                     </h2>
-                    <p style={{ color: '#718096', fontSize: '15px', margin: 0 }}>
+                    <p style={{ color: themeColors.subtitle, fontSize: '15px', margin: 0 }}>
                         Bắt đầu hành trình quản lý thời gian ngay hôm nay.
                     </p>
                 </div>
@@ -307,7 +328,7 @@ export default function Login({ setToken }) {
                         <input 
                             type="text" 
                             placeholder="Tên đăng nhập" 
-                            style={{ width: '100%', padding: '14px 20px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.4)', fontSize: '15px', outline: 'none', background: 'rgba(255,255,255,0.6)', boxSizing: 'border-box' }}
+                            style={{ width: '100%', padding: '14px 20px', borderRadius: '12px', border: `1px solid ${themeColors.inputBorder}`, fontSize: '15px', outline: 'none', background: themeColors.inputBg, color: themeColors.inputText, boxSizing: 'border-box' }}
                             value={username}
                             onChange={e => setUsername(e.target.value)}
                             required
@@ -315,14 +336,14 @@ export default function Login({ setToken }) {
                         <input 
                             type="text" 
                             placeholder="Tên hiển thị (Tùy chọn)" 
-                            style={{ width: '100%', padding: '14px 20px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.4)', fontSize: '15px', outline: 'none', background: 'rgba(255,255,255,0.6)', boxSizing: 'border-box' }}
+                            style={{ width: '100%', padding: '14px 20px', borderRadius: '12px', border: `1px solid ${themeColors.inputBorder}`, fontSize: '15px', outline: 'none', background: themeColors.inputBg, color: themeColors.inputText, boxSizing: 'border-box' }}
                             value={displayName}
                             onChange={e => setDisplayName(e.target.value)}
                         />
                         <input 
                             type="email" 
                             placeholder="Email" 
-                            style={{ width: '100%', padding: '14px 20px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.4)', fontSize: '15px', outline: 'none', background: 'rgba(255,255,255,0.6)', boxSizing: 'border-box' }}
+                            style={{ width: '100%', padding: '14px 20px', borderRadius: '12px', border: `1px solid ${themeColors.inputBorder}`, fontSize: '15px', outline: 'none', background: themeColors.inputBg, color: themeColors.inputText, boxSizing: 'border-box' }}
                             value={email}
                             onChange={e => setEmail(e.target.value)}
                             required
@@ -330,7 +351,7 @@ export default function Login({ setToken }) {
                         <input 
                             type="password" 
                             placeholder="Mật khẩu" 
-                            style={{ width: '100%', padding: '14px 20px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.4)', fontSize: '15px', outline: 'none', background: 'rgba(255,255,255,0.6)', boxSizing: 'border-box' }}
+                            style={{ width: '100%', padding: '14px 20px', borderRadius: '12px', border: `1px solid ${themeColors.inputBorder}`, fontSize: '15px', outline: 'none', background: themeColors.inputBg, color: themeColors.inputText, boxSizing: 'border-box' }}
                             value={password}
                             onChange={e => setPassword(e.target.value)}
                             required
@@ -338,7 +359,7 @@ export default function Login({ setToken }) {
                         <input 
                             type="password" 
                             placeholder="Xác nhận Mật khẩu" 
-                            style={{ width: '100%', padding: '14px 20px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.4)', fontSize: '15px', outline: 'none', background: 'rgba(255,255,255,0.6)', boxSizing: 'border-box' }}
+                            style={{ width: '100%', padding: '14px 20px', borderRadius: '12px', border: `1px solid ${themeColors.inputBorder}`, fontSize: '15px', outline: 'none', background: themeColors.inputBg, color: themeColors.inputText, boxSizing: 'border-box' }}
                             value={confirmPassword}
                             onChange={e => setConfirmPassword(e.target.value)}
                             required
@@ -350,7 +371,7 @@ export default function Login({ setToken }) {
                     </button>
                 </form>
 
-                <p style={{ textAlign: 'center', marginTop: '30px', fontSize: '15px', color: '#475569' }}>
+                <p style={{ textAlign: 'center', marginTop: '30px', fontSize: '15px', color: themeColors.subtitle }}>
                     Đã có tài khoản?
                     <span style={{ marginLeft: '8px', color: '#4f46e5', fontWeight: '800', cursor: 'pointer' }} onClick={toggleFlip}>
                         Đăng nhập
@@ -361,7 +382,7 @@ export default function Login({ setToken }) {
         </div>
       </div>
       
-      {/* Thêm CSS cho hiệu ứng nháy con trỏ của máy đánh chữ */}
+      {/* Thêm CSS cho hiệu ứng nháy con trỏ của máy đánh chữ và placeholder color */}
       <style>{`
         .blink-cursor {
             animation: blink 1s step-start infinite;
@@ -369,6 +390,9 @@ export default function Login({ setToken }) {
         }
         @keyframes blink {
             50% { opacity: 0; }
+        }
+        ::placeholder {
+            color: ${isDarkBackground ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.5)'};
         }
       `}</style>
     </div>
