@@ -37,6 +37,8 @@ export default function Login({ setToken }) {
   const [aiGreeting, setAiGreeting] = useState('Chào mừng bạn quay trở lại!');
   const [aiTooltip, setAiTooltip] = useState('');
   const [isFlipped, setIsFlipped] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadingText, setLoadingText] = useState('');
 
   const typedGreeting = useTypewriter(aiGreeting, 40);
 
@@ -76,6 +78,8 @@ export default function Login({ setToken }) {
   const handleSubmit = async (e, formType) => {
     e.preventDefault();
     setAiTooltip(''); // Reset tooltip
+    setIsLoading(true);
+    setLoadingText(formType === 'login' ? 'Đang xác thực thông tin...' : 'Đang tạo tài khoản...');
     try {
       if (formType === 'login') {
         const res = await api.post('/auth/login', { username, password });
@@ -86,18 +90,24 @@ export default function Login({ setToken }) {
         localStorage.setItem('theme', res.data.theme || 'light');
         localStorage.setItem('bgImage', res.data.background_image || '');
         localStorage.setItem('streak', res.data.streak || 0);
-        setToken(res.data.token);
-        toast.success("Đăng nhập thành công!");
+        
+        setLoadingText('Đăng nhập thành công! Đang chuẩn bị không gian làm việc...');
+        setTimeout(() => {
+            setToken(res.data.token);
+        }, 1200); // Thêm delay nhỏ để user thấy hiệu ứng mượt mà trước khi chuyển trang
       } else {
         if (password !== confirmPassword) {
+            setIsLoading(false);
             return toast.error('Mật khẩu xác nhận không khớp!');
         }
         const res = await api.post('/auth/register', { username, email, name: displayName, password });
         setTempUserId(res.data.user_id);
         setShowOTP(true);
         toast.success(res.data.message);
+        setIsLoading(false);
       }
     } catch (error) {
+      setIsLoading(false);
       if (formType === 'login' && error.response?.status === 401) {
           // Báo lỗi sai mật khẩu qua AI
           api.post('/auth/ai-helper', { action: 'login_error' })
@@ -111,6 +121,8 @@ export default function Login({ setToken }) {
 
   const handleVerifyOTP = async (e) => {
       e.preventDefault();
+      setIsLoading(true);
+      setLoadingText('Đang xác thực mã OTP...');
       try {
           const res = await api.post('/auth/verify', { user_id: tempUserId, code: otpCode });
           toast.success(res.data.message);
@@ -121,6 +133,8 @@ export default function Login({ setToken }) {
           setConfirmPassword('');
       } catch (error) {
           toast.error(error.response?.data?.message || 'Mã OTP sai hoặc đã hết hạn');
+      } finally {
+          setIsLoading(false);
       }
   }
 
@@ -148,8 +162,33 @@ export default function Login({ setToken }) {
   const primaryBtnStyle = { width: '100%', padding: '14px', background: '#4f46e5', color: 'white', border: 'none', borderRadius: '12px', fontSize: '16px', fontWeight: '600', cursor: 'pointer', marginTop: '10px', transition: 'background 0.3s' };
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', width: '100vw', fontFamily: "'Inter', sans-serif", background: '#f5f7fa', overflow: 'hidden' }}>
+    <div style={{ display: 'flex', minHeight: '100vh', width: '100vw', fontFamily: "'Inter', sans-serif", background: '#f5f7fa', overflow: 'hidden', position: 'relative' }}>
       
+      {/* LOADING OVERLAY */}
+      {isLoading && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
+          background: isDarkBackground ? 'rgba(0,0,0,0.85)' : 'rgba(255,255,255,0.85)',
+          backdropFilter: 'blur(15px)',
+          WebkitBackdropFilter: 'blur(15px)',
+          zIndex: 9999,
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          transition: 'all 0.4s ease'
+        }}>
+          <div className="modern-spinner"></div>
+          <h3 style={{
+             marginTop: '25px', 
+             color: isDarkBackground ? '#fff' : '#1a202c', 
+             fontSize: '1.2rem',
+             fontWeight: '600',
+             letterSpacing: '0.5px',
+             animation: 'pulse 1.5s infinite',
+             textAlign: 'center',
+             maxWidth: '80%'
+          }}>{loadingText}</h3>
+        </div>
+      )}
+
       {/* NỬA TRÁI: Visual & Slogan */}
       <div style={{ 
           flex: 1, 
@@ -394,6 +433,21 @@ export default function Login({ setToken }) {
         }
         ::placeholder {
             color: ${isDarkBackground ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.5)'};
+        }
+        .modern-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid ${isDarkBackground ? 'rgba(255,255,255,0.1)' : 'rgba(79, 70, 229, 0.2)'};
+            border-radius: 50%;
+            border-top-color: ${isDarkBackground ? '#fff' : '#4f46e5'};
+            animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
         }
       `}</style>
     </div>
