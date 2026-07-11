@@ -22,7 +22,11 @@ export default function Subjects() {
   const [rawText, setRawText] = useState('');
   const [formData, setFormData] = useState({ class_code: '', subject_name: '', type: '', start_week: '', end_week: '', time: [] });
   const [editId, setEditId] = useState(null);
-  const [aiStatus, setAiStatus] = useState(null);
+  
+  const [aiStatus, setAiStatus] = useState(() => {
+    const saved = localStorage.getItem('aiStatus');
+    return saved ? JSON.parse(saved) : null;
+  });
   
   const ACADEMIC_OFFSET = 20;
   const getWeekNumber = (d) => {
@@ -43,20 +47,23 @@ export default function Subjects() {
     loadData();
     const handleReload = () => loadData();
     window.addEventListener('reloadSubjects', handleReload);
-    return () => window.removeEventListener('reloadSubjects', handleReload);
+    
+    const handleAiStatus = () => {
+      const saved = localStorage.getItem('aiStatus');
+      if (saved) setAiStatus(JSON.parse(saved));
+    };
+    window.addEventListener('aiStatusUpdated', handleAiStatus);
+    
+    return () => {
+      window.removeEventListener('reloadSubjects', handleReload);
+      window.removeEventListener('aiStatusUpdated', handleAiStatus);
+    };
   }, []);
 
   const loadData = async () => {
     try {
       const res = await api.get('/subjects');
       setSubjects(res.data);
-    } catch (e) {
-      console.error(e);
-    }
-    
-    try {
-      const statusRes = await api.get('/subjects/ai_status');
-      setAiStatus(statusRes.data);
     } catch (e) {
       console.error(e);
     }

@@ -77,6 +77,16 @@ function App() {
       }
     };
     window.addEventListener('updateWeatherBackground', handleUpdateWeather);
+    
+    // Fetch AI Status silently in background when app loads
+    fetch('http://localhost:5000/api/ai_status')
+      .then(res => res.json())
+      .then(data => {
+        localStorage.setItem('aiStatus', JSON.stringify(data));
+        window.dispatchEvent(new Event('aiStatusUpdated'));
+      })
+      .catch(err => console.error("AI Status Error:", err));
+
     return () => window.removeEventListener('updateWeatherBackground', handleUpdateWeather);
   }, []);
 

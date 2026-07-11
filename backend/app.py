@@ -437,25 +437,31 @@ def api_parse_subject(current_user_id):
         fallback_result["ai_error"] = ai_error
     return jsonify(fallback_result)
 
-@app.route('/api/subjects/ai_status', methods=['GET'])
-@token_required
-def get_ai_status(current_user_id):
+@app.route('/api/ai_status', methods=['GET'])
+def get_ai_status():
     kaggle_url = os.getenv("KAGGLE_NODE_URL")
     camber_url = os.getenv("CAMBER_NODE_URL")
     
-    if kaggle_url:
+    def is_alive(url):
         try:
-            requests.get(kaggle_url.rstrip('/') + "/", timeout=5)
-            return jsonify({"env": "Kaggle", "status": "Sẵn sàng"})
+            headers = {"ngrok-skip-browser-warning": "true"}
+            res = requests.post(url.rstrip('/') + "/extract", json={"raw_text": "ping"}, headers=headers, timeout=5)
+            # If it returns JSON, it means the FastAPI server is running (not an ngrok error page)
+            res.json()
+            return True
         except Exception:
-            return jsonify({"env": "Kaggle", "status": "Không thể kết nối"})
+            return False
+
+    if kaggle_url:
+        if is_alive(kaggle_url):
+            return jsonify({"env": "Kaggle", "status": "Sẵn sàng"})
 
     if camber_url:
-        try:
-            requests.get(camber_url.rstrip('/') + "/", timeout=5)
+        if is_alive(camber_url):
             return jsonify({"env": "Camber Cloud", "status": "Sẵn sàng"})
-        except Exception:
-            return jsonify({"env": "Camber Cloud", "status": "Không thể kết nối"})
+            
+    if kaggle_url or camber_url:
+        return jsonify({"env": "Local (Dự phòng)", "status": "Mất kết nối AI Cloud"})
             
     return jsonify({"env": "Local", "status": "Sẵn sàng"})
 
