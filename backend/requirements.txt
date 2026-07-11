@@ -9,3 +9,4 @@ bcrypt
 PyJWT
 sendgrid
 requests
+google-generativeai
