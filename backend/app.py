@@ -768,7 +768,10 @@ def handle_attendance(current_user_id):
     
     if request.method == 'GET':
         week = request.args.get('week', type=int)
-        cursor.execute('SELECT * FROM attendance WHERE user_id = %s AND week = %s', (current_user_id, week))
+        if week is not None:
+            cursor.execute('SELECT * FROM attendance WHERE user_id = %s AND week = %s', (current_user_id, week))
+        else:
+            cursor.execute('SELECT * FROM attendance WHERE user_id = %s', (current_user_id,))
         records = cursor.fetchall()
         conn.close()
         return jsonify([dict(r) for r in records])

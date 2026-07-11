@@ -116,12 +116,15 @@ export default function Study() {
         const pl = playlists.find(p => p.id == selectedPlaylistId);
         if (pl && pl.items && pl.items.length > 0) {
             const idx = currentSongIndex % pl.items.length;
-            setCurrentMusic({ ...pl.items[idx], start_time: new Date().toISOString() });
+            setCurrentMusic({ 
+                ...pl.items[idx], 
+                start_time: isStarted ? new Date().toISOString() : null 
+            });
         } else {
             setCurrentMusic(null);
         }
     }
-  }, [activeTab, selectedPlaylistId, currentSongIndex, playlists]);
+  }, [activeTab, selectedPlaylistId, currentSongIndex, playlists, isStarted]);
 
   const handleNextSong = async () => {
       if (activeTab === 'solo' && isStarted) {
@@ -243,9 +246,12 @@ export default function Study() {
 
   const getMusicStartTimeOffset = () => {
       if (!currentMusic || !currentMusic.start_time) return 0;
-      const start = new Date(currentMusic.start_time + "Z").getTime();
+      let stStr = currentMusic.start_time;
+      if (!stStr.endsWith("Z")) stStr += "Z";
+      const start = new Date(stStr).getTime();
       const nowMs = new Date().getTime();
-      return Math.max(0, Math.floor((nowMs - start) / 1000));
+      const offset = Math.max(0, Math.floor((nowMs - start) / 1000));
+      return isNaN(offset) ? 0 : offset;
   };
 
   const handleLeaveRoom = async () => {

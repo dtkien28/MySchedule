@@ -68,9 +68,9 @@ export default function Dashboard() {
         api.get('/meetings')
       ]);
       
-      const attMap = {}; // "subjectId_day" -> true/false
+      const attMap = {}; // "subjectId_week_day" -> true/false
       attRes.data.forEach(a => {
-        attMap[`${a.subject_id}_${a.day}`] = a.attended;
+        attMap[`${a.subject_id}_${a.week}_${a.day}`] = a.attended;
       });
 
       const evts = [];
@@ -86,7 +86,7 @@ export default function Dashboard() {
                 time_end: t.time.split('-')[1],
                 title: s.subject_name,
                 subtitle: t.room,
-                attended: attMap[`${s.id}_${t.day}`] || false
+                attended: attMap[`${s.id}_${currentWeek}_${t.day}`] || false
               });
             }
           });
@@ -155,7 +155,7 @@ export default function Dashboard() {
           s.time.forEach(t => {
              if (t.day === todayDow && !t.cancel_weeks.includes(todayWeek)) {
                 totalItems++;
-                if (attMap[`${s.id}_${t.day}`]) doneItems++;
+                if (attMap[`${s.id}_${todayWeek}_${t.day}`]) doneItems++;
              }
           });
         }
