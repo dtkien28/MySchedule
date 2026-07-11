@@ -56,6 +56,9 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchData();
+    const handleReload = () => fetchData();
+    window.addEventListener('reloadSubjects', handleReload);
+    return () => window.removeEventListener('reloadSubjects', handleReload);
   }, [currentWeek]);
 
   const fetchData = async () => {

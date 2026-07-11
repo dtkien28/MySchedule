@@ -21,6 +21,9 @@ import requests
 # Load environment variables
 load_dotenv()
 
+import google.generativeai as genai
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+
 app = Flask(__name__)
 
 UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'static', 'uploads', 'music')
@@ -81,13 +84,13 @@ def register():
     cursor = conn.cursor()
     try:
         # Check if user exists and is unverified, then delete them to allow re-registration
-        cursor.execute("SELECT id, is_verified FROM users WHERE username = %s OR email = %s", (username, email))
+        cursor.execute("SELECT id, is_verified FROM users WHERE (username = %s OR email = %s) AND is_deleted = FALSE", (username, email))
         existing_user = cursor.fetchone()
         if existing_user:
             if existing_user['is_verified'] == 1:
                 return jsonify({'message': 'Username or email already exists'}), 400
             else:
-                cursor.execute("DELETE FROM users WHERE id = %s", (existing_user['id'],))
+                cursor.execute("UPDATE users SET is_deleted = TRUE WHERE id = %s", (existing_user['id'],))
                 
         cursor.execute("INSERT INTO users (username, email, display_name, password_hash, is_verified) VALUES (%s, %s, %s, %s, 0) RETURNING id", (username, email, display_name, hashed.decode('utf-8')))
         user_id = cursor.fetchone()['id']
@@ -158,7 +161,7 @@ def login():
     
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM users WHERE username = %s", (username,))
+    cursor.execute("SELECT * FROM users WHERE username = %s AND is_deleted = FALSE", (username,))
     user = cursor.fetchone()
     conn.close()
     
@@ -362,17 +365,75 @@ def api_parse_subject(current_user_id):
         fallback_result["ai_error"] = ai_error
     return jsonify(fallback_result)
 
+@app.route('/api/chatbot/chat', methods=['POST'])
+@token_required
+def api_chatbot(current_user_id):
+    data = request.json
+    user_message = data.get('message', '')
+    chat_history = data.get('history', [])
+    page_context = data.get('page_context', {})
+
+    try:
+        # 1. System Prompt
+        system_prompt = """
+        Bạn là Ketib AI, trợ lý học tập thông minh. Nhiệm vụ của bạn là tư vấn, giải đáp lịch học và giúp người dùng thêm lịch học mới.
+        BẠN BẮT BUỘC PHẢI TRẢ VỀ DỮ LIỆU ĐỊNH DẠNG JSON.
+        - Nếu người dùng chỉ hỏi đáp bình thường:
+          {"type": "chat", "message": "Câu trả lời của bạn", "schedule_data": null}
+        - Nếu người dùng nhờ THÊM/TẠO một môn học mới (ví dụ: 'thêm môn Toán sáng mai 7h'):
+          {"type": "action_add", "message": "Đã thêm môn Toán vào lịch!", "schedule_data": {"class_code": "AI101", "subject_name": "Tên Môn", "type": "LEC", "start_week": 1, "end_week": 15, "time": [{"day": "T2", "time": "07:00 - 09:00", "room": "", "cancel_weeks": []}]}}
+        """
+
+        model = genai.GenerativeModel(
+            model_name='gemini-1.5-flash',
+            system_instruction=system_prompt
+        )
+
+        formatted_history = []
+        for msg in chat_history:
+            formatted_history.append({
+                "role": "user" if msg['sender'] == 'user' else "model",
+                "parts": [msg['text']]
+            })
+
+        chat = model.start_chat(history=formatted_history)
+
+        current_schedules = json.dumps(page_context.get('schedules', []), ensure_ascii=False)
+        full_prompt = (
+            f"[DỮ LIỆU LỊCH HỌC HIỆN TẠI TRÊN MÀN HÌNH]: {current_schedules}\n"
+            f"----------------------------------------\n"
+            f"Câu hỏi: {user_message}"
+        )
+
+        response = chat.send_message(
+            full_prompt,
+            generation_config=genai.GenerationConfig(response_mime_type="application/json")
+        )
+        
+        ai_result = json.loads(response.text)
+        
+        return jsonify({
+            "status": "success",
+            "type": ai_result.get("type", "chat"),
+            "reply": ai_result.get("message", ""),
+            "action_data": ai_result.get("schedule_data")
+        })
+
+    except Exception as e:
+        print("Chatbot Error:", e)
+        return jsonify({"status": "error", "reply": "Hệ thống đang bận, bạn thử lại xíu nhé!"})
+
 @app.route('/api/subjects', methods=['GET'])
 @token_required
 def get_subjects(current_user_id):
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute('SELECT * FROM subjects WHERE user_id = %s', (current_user_id,))
+    cursor.execute('SELECT * FROM subjects WHERE user_id = %s AND is_deleted = FALSE', (current_user_id,))
     subs = cursor.fetchall()
     
     result = []
     for s in subs:
-        cursor.execute('SELECT * FROM study_times WHERE subject_id = %s', (s['id'],))
+        cursor.execute('SELECT * FROM study_times WHERE subject_id = %s AND is_deleted = FALSE', (s['id'],))
         times = cursor.fetchall()
         
         result.append({
@@ -396,7 +457,7 @@ def get_subjects(current_user_id):
 
 def check_schedule_conflict(conn, user_id, start_week, end_week, time_slots, ignore_subject_id=None):
     cursor = conn.cursor()
-    query = 'SELECT * FROM subjects WHERE user_id = %s'
+    query = 'SELECT * FROM subjects WHERE user_id = %s AND is_deleted = FALSE'
     params = [user_id]
     if ignore_subject_id:
         query += ' AND id != %s'
@@ -409,7 +470,7 @@ def check_schedule_conflict(conn, user_id, start_week, end_week, time_slots, ign
         ext_start_week = ext_sub['start_week']
         ext_end_week = ext_sub['end_week']
         
-        cursor.execute('SELECT * FROM study_times WHERE subject_id = %s', (ext_sub['id'],))
+        cursor.execute('SELECT * FROM study_times WHERE subject_id = %s AND is_deleted = FALSE', (ext_sub['id'],))
         ext_times = cursor.fetchall()
         
         for nt in time_slots:
@@ -518,7 +579,7 @@ def edit_subject(current_user_id):
     ''', (data.get('class_code',''), data.get('subject_name',''), data.get('type', ''), s_week, e_week, subject_id, current_user_id))
     
     # Delete old times
-    cursor.execute('DELETE FROM study_times WHERE subject_id=%s', (subject_id,))
+    cursor.execute('UPDATE study_times SET is_deleted = TRUE WHERE subject_id=%s', (subject_id,))
     
     # Insert new times
     for t in data.get('time', []):
@@ -540,7 +601,7 @@ def edit_subject(current_user_id):
 def delete_subject(current_user_id, id):
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute('DELETE FROM subjects WHERE id = %s AND user_id = %s', (id, current_user_id))
+    cursor.execute('UPDATE subjects SET is_deleted = TRUE WHERE id = %s AND user_id = %s', (id, current_user_id))
     conn.commit()
     conn.close()
     return jsonify({'message': 'Deleted'})
@@ -554,7 +615,7 @@ def handle_works(current_user_id):
     cursor = conn.cursor()
     
     if request.method == 'GET':
-        cursor.execute('SELECT * FROM work_schedules WHERE user_id = %s', (current_user_id,))
+        cursor.execute('SELECT * FROM work_schedules WHERE user_id = %s AND is_deleted = FALSE', (current_user_id,))
         works = cursor.fetchall()
         conn.close()
         return jsonify([dict(w) for w in works])
@@ -574,7 +635,7 @@ def handle_works(current_user_id):
 def delete_work(current_user_id, id):
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute('DELETE FROM work_schedules WHERE id = %s AND user_id = %s', (id, current_user_id))
+    cursor.execute('UPDATE work_schedules SET is_deleted = TRUE WHERE id = %s AND user_id = %s', (id, current_user_id))
     conn.commit()
     conn.close()
     return jsonify({'message': 'Deleted'})
@@ -591,7 +652,7 @@ def handle_groups(current_user_id):
         cursor.execute('''
             SELECT g.id, g.name FROM groups g 
             JOIN group_members gm ON gm.group_id = g.id 
-            WHERE gm.user_id = %s
+            WHERE gm.user_id = %s AND g.is_deleted = FALSE AND gm.is_deleted = FALSE
         ''', (current_user_id,))
         groups = cursor.fetchall()
         conn.close()
@@ -613,13 +674,13 @@ def add_group_member(current_user_id, group_id):
     conn = get_db_connection()
     cursor = conn.cursor()
     
-    cursor.execute('SELECT owner_id FROM groups WHERE id = %s', (group_id,))
+    cursor.execute('SELECT owner_id FROM groups WHERE id = %s AND is_deleted = FALSE', (group_id,))
     
     g = cursor.fetchone()
     if not g or g['owner_id'] != current_user_id:
         return jsonify({'error': 'Unauthorized'}), 403
         
-    cursor.execute('SELECT id FROM users WHERE username = %s', (target_username,))
+    cursor.execute('SELECT id FROM users WHERE username = %s AND is_deleted = FALSE', (target_username,))
         
     target_user = cursor.fetchone()
     if not target_user:
@@ -639,23 +700,23 @@ def get_group_schedule(current_user_id, group_id):
     conn = get_db_connection()
     cursor = conn.cursor()
     
-    cursor.execute('SELECT * FROM group_members WHERE group_id = %s AND user_id = %s', (group_id, current_user_id))
+    cursor.execute('SELECT * FROM group_members WHERE group_id = %s AND user_id = %s AND is_deleted = FALSE', (group_id, current_user_id))
     
     mem = cursor.fetchone()
     if not mem:
         return jsonify({'error': 'Not in group'}), 403
         
-    cursor.execute('SELECT u.id, u.username FROM group_members gm JOIN users u ON gm.user_id = u.id WHERE gm.group_id = %s', (group_id,))
+    cursor.execute('SELECT u.id, u.username FROM group_members gm JOIN users u ON gm.user_id = u.id WHERE gm.group_id = %s AND gm.is_deleted = FALSE AND u.is_deleted = FALSE', (group_id,))
         
     members = cursor.fetchall()
     
     schedule_data = []
     
     for m in members:
-        cursor.execute('SELECT id, start_week, end_week FROM subjects WHERE user_id = %s', (m['id'],))
+        cursor.execute('SELECT id, start_week, end_week FROM subjects WHERE user_id = %s AND is_deleted = FALSE', (m['id'],))
         subs = cursor.fetchall()
         for s in subs:
-            cursor.execute('SELECT day, time_start, time_end, cancel_weeks FROM study_times WHERE subject_id = %s', (s['id'],))
+            cursor.execute('SELECT day, time_start, time_end, cancel_weeks FROM study_times WHERE subject_id = %s AND is_deleted = FALSE', (s['id'],))
             times = cursor.fetchall()
             for t in times:
                 schedule_data.append({
@@ -670,7 +731,7 @@ def get_group_schedule(current_user_id, group_id):
                     "cancel_weeks": json.loads(t['cancel_weeks']) if t['cancel_weeks'] else []
                 })
         
-        cursor.execute('SELECT day, time_start, time_end FROM work_schedules WHERE user_id = %s', (m['id'],))
+        cursor.execute('SELECT day, time_start, time_end FROM work_schedules WHERE user_id = %s AND is_deleted = FALSE', (m['id'],))
         
         works = cursor.fetchall()
         for w in works:
@@ -801,7 +862,7 @@ def handle_tasks(current_user_id):
     cursor = conn.cursor()
     
     if request.method == 'GET':
-        cursor.execute('SELECT * FROM tasks WHERE user_id = %s', (current_user_id,))
+        cursor.execute('SELECT * FROM tasks WHERE user_id = %s AND is_deleted = FALSE', (current_user_id,))
         tasks = cursor.fetchall()
         conn.close()
         return jsonify([dict(t) for t in tasks])
@@ -831,7 +892,7 @@ def manage_task(current_user_id, id):
         return jsonify({'message': 'Updated'})
         
     if request.method == 'DELETE':
-        cursor.execute('DELETE FROM tasks WHERE id = %s AND user_id = %s', (id, current_user_id))
+        cursor.execute('UPDATE tasks SET is_deleted = TRUE WHERE id = %s AND user_id = %s', (id, current_user_id))
         conn.commit()
         conn.close()
         return jsonify({'message': 'Deleted'})
@@ -844,7 +905,7 @@ def user_settings(current_user_id):
     cursor = conn.cursor()
     
     if request.method == 'GET':
-        cursor.execute("SELECT * FROM users WHERE id = %s", (current_user_id,))
+        cursor.execute("SELECT * FROM users WHERE id = %s AND is_deleted = FALSE", (current_user_id,))
         user = cursor.fetchone()
         if not user:
             conn.close()
@@ -890,7 +951,7 @@ def manage_music(current_user_id):
     cursor = conn.cursor()
     
     if request.method == 'GET':
-        cursor.execute("SELECT * FROM music_links WHERE user_id = %s", (current_user_id,))
+        cursor.execute("SELECT * FROM music_links WHERE user_id = %s AND is_deleted = FALSE", (current_user_id,))
         links = cursor.fetchall()
         conn.close()
         return jsonify([dict(row) for row in links])
@@ -909,7 +970,7 @@ def manage_music(current_user_id):
 def delete_music(current_user_id, id):
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute("DELETE FROM music_links WHERE id = %s AND user_id = %s", (id, current_user_id))
+    cursor.execute("UPDATE music_links SET is_deleted = TRUE WHERE id = %s AND user_id = %s", (id, current_user_id))
     conn.commit()
     conn.close()
     return jsonify({'message': 'Music deleted'})
@@ -950,7 +1011,7 @@ def manage_playlists(current_user_id):
     cursor = conn.cursor()
     
     if request.method == 'GET':
-        cursor.execute("SELECT * FROM playlists WHERE user_id = %s", (current_user_id,))
+        cursor.execute("SELECT * FROM playlists WHERE user_id = %s AND is_deleted = FALSE", (current_user_id,))
         playlists = cursor.fetchall()
         result = []
         for p in playlists:
@@ -958,7 +1019,7 @@ def manage_playlists(current_user_id):
                 SELECT pi.id as item_id, pi.order_index, ml.*
                 FROM playlist_items pi
                 JOIN music_links ml ON pi.music_id = ml.id
-                WHERE pi.playlist_id = %s
+                WHERE pi.playlist_id = %s AND pi.is_deleted = FALSE AND ml.is_deleted = FALSE
                 ORDER BY pi.order_index ASC
             ''', (p['id'],))
             items = cursor.fetchall()
@@ -982,7 +1043,7 @@ def manage_playlists(current_user_id):
 def delete_playlist(current_user_id, id):
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute("DELETE FROM playlists WHERE id = %s AND user_id = %s", (id, current_user_id))
+    cursor.execute("UPDATE playlists SET is_deleted = TRUE WHERE id = %s AND user_id = %s", (id, current_user_id))
     conn.commit()
     conn.close()
     return jsonify({'message': 'Playlist deleted'})
@@ -995,7 +1056,7 @@ def add_playlist_item(current_user_id, id):
     cursor = conn.cursor()
     
     # check ownership
-    cursor.execute("SELECT * FROM playlists WHERE id = %s AND user_id = %s", (id, current_user_id))
+    cursor.execute("SELECT * FROM playlists WHERE id = %s AND user_id = %s AND is_deleted = FALSE", (id, current_user_id))
     p = cursor.fetchone()
     if not p:
         conn.close()
@@ -1003,7 +1064,7 @@ def add_playlist_item(current_user_id, id):
         
     music_id = data.get('music_id')
     # get max order
-    cursor.execute("SELECT MAX(order_index) as m FROM playlist_items WHERE playlist_id = %s", (id,))
+    cursor.execute("SELECT MAX(order_index) as m FROM playlist_items WHERE playlist_id = %s AND is_deleted = FALSE", (id,))
     max_order = cursor.fetchone()['m']
     next_order = (max_order or 0) + 1
     
@@ -1020,8 +1081,8 @@ def delete_playlist_item(current_user_id, item_id):
     cursor = conn.cursor()
     # verify ownership via playlist
     cursor.execute('''
-        DELETE FROM playlist_items 
-        WHERE id = %s AND playlist_id IN (SELECT id FROM playlists WHERE user_id = %s)
+        UPDATE playlist_items SET is_deleted = TRUE 
+        WHERE id = %s AND playlist_id IN (SELECT id FROM playlists WHERE user_id = %s AND is_deleted = FALSE)
     ''', (item_id, current_user_id))
     conn.commit()
     conn.close()
@@ -1037,10 +1098,10 @@ def manage_rooms(current_user_id):
     if request.method == 'GET':
         cursor.execute('''
             SELECT sr.*, u.display_name as host_name,
-                   (SELECT COUNT(*) FROM study_room_members WHERE room_id = sr.id) as current_participants
+                   (SELECT COUNT(*) FROM study_room_members WHERE room_id = sr.id AND is_deleted = FALSE) as current_participants
             FROM study_rooms sr
             JOIN users u ON sr.host_id = u.id
-            WHERE sr.status = 'active'
+            WHERE sr.status = 'active' AND sr.is_deleted = FALSE AND u.is_deleted = FALSE
         ''')
         rooms = cursor.fetchall()
         conn.close()
@@ -1076,14 +1137,14 @@ def join_room(current_user_id, room_id):
     conn = get_db_connection()
     cursor = conn.cursor()
     
-    cursor.execute("SELECT * FROM study_rooms WHERE id = %s AND status = 'active'", (room_id,))
+    cursor.execute("SELECT * FROM study_rooms WHERE id = %s AND status = 'active' AND is_deleted = FALSE", (room_id,))
     
     room = cursor.fetchone()
     if not room:
         conn.close()
         return jsonify({'message': 'Room not found or inactive'}), 404
         
-    cursor.execute("SELECT COUNT(*) as c FROM study_room_members WHERE room_id = %s", (room_id,))
+    cursor.execute("SELECT COUNT(*) as c FROM study_room_members WHERE room_id = %s AND is_deleted = FALSE", (room_id,))
     members_count = cursor.fetchone()['c']
     if members_count >= room['max_participants'] and room['host_id'] != current_user_id:
         conn.close()
@@ -1108,14 +1169,14 @@ def kick_user(current_user_id, room_id, target_user_id):
     conn = get_db_connection()
     cursor = conn.cursor()
     
-    cursor.execute("SELECT host_id FROM study_rooms WHERE id = %s", (room_id,))
+    cursor.execute("SELECT host_id FROM study_rooms WHERE id = %s AND is_deleted = FALSE", (room_id,))
     
     room = cursor.fetchone()
     if not room or room['host_id'] != current_user_id:
         conn.close()
         return jsonify({'message': 'Unauthorized'}), 403
         
-    cursor.execute("DELETE FROM study_room_members WHERE room_id = %s AND user_id = %s", (room_id, target_user_id))
+    cursor.execute("UPDATE study_room_members SET is_deleted = TRUE WHERE room_id = %s AND user_id = %s", (room_id, target_user_id))
     conn.commit()
     conn.close()
     return jsonify({'message': 'User kicked'})
@@ -1127,7 +1188,7 @@ def next_song(current_user_id, room_id):
     conn = get_db_connection()
     cursor = conn.cursor()
     
-    cursor.execute("SELECT * FROM study_rooms WHERE id = %s", (room_id,))
+    cursor.execute("SELECT * FROM study_rooms WHERE id = %s AND is_deleted = FALSE", (room_id,))
     
     room = cursor.fetchone()
     if not room or room['host_id'] != current_user_id:
@@ -1148,7 +1209,7 @@ def leave_room(current_user_id, room_id):
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
-        cursor.execute('SELECT host_id FROM study_rooms WHERE id = %s', (room_id,))
+        cursor.execute('SELECT host_id FROM study_rooms WHERE id = %s AND is_deleted = FALSE', (room_id,))
         room = cursor.fetchone()
         if not room:
             return jsonify({'message': 'Room not found'}), 404
@@ -1158,7 +1219,7 @@ def leave_room(current_user_id, room_id):
             cursor.execute("UPDATE study_rooms SET status = 'closed' WHERE id = %s", (room_id,))
         else:
             # Member leaves
-            cursor.execute("DELETE FROM study_room_members WHERE room_id = %s AND user_id = %s", (room_id, current_user_id))
+            cursor.execute("UPDATE study_room_members SET is_deleted = TRUE WHERE room_id = %s AND user_id = %s", (room_id, current_user_id))
         
         conn.commit()
         return jsonify({'message': 'Left room successfully'}), 200
@@ -1173,7 +1234,7 @@ def sync_room(current_user_id, room_id):
     conn = get_db_connection()
     cursor = conn.cursor()
     
-    cursor.execute('SELECT * FROM study_rooms WHERE id = %s', (room_id,))
+    cursor.execute('SELECT * FROM study_rooms WHERE id = %s AND is_deleted = FALSE', (room_id,))
     room = cursor.fetchone()
     
     if not room:
@@ -1181,7 +1242,7 @@ def sync_room(current_user_id, room_id):
         return jsonify({'message': 'Room not found'}), 404
         
     # Check if user is in room and approved
-    cursor.execute("SELECT status FROM study_room_members WHERE room_id = %s AND user_id = %s", (room_id, current_user_id))
+    cursor.execute("SELECT status FROM study_room_members WHERE room_id = %s AND user_id = %s AND is_deleted = FALSE", (room_id, current_user_id))
     member = cursor.fetchone()
     if not member or member['status'] != 'approved':
         conn.close()
@@ -1196,10 +1257,10 @@ def sync_room(current_user_id, room_id):
     if room_dict.get('playlist_id'):
         cursor.execute('''
             SELECT ml.* 
-            FROM playlist_items pi
-            JOIN music_links ml ON pi.music_id = ml.id
-            WHERE pi.playlist_id = %s
-            ORDER BY pi.order_index ASC
+        FROM playlist_items pi
+        JOIN music_links ml ON pi.music_id = ml.id
+        WHERE pi.playlist_id = %s AND pi.is_deleted = FALSE AND ml.is_deleted = FALSE
+        ORDER BY pi.order_index ASC
         ''', (room_dict['playlist_id'],))
         items = cursor.fetchall()
         if items:
@@ -1214,7 +1275,7 @@ def sync_room(current_user_id, room_id):
         SELECT u.id, u.display_name, u.username, srm.status
         FROM study_room_members srm
         JOIN users u ON srm.user_id = u.id
-        WHERE srm.room_id = %s
+        WHERE srm.room_id = %s AND srm.is_deleted = FALSE AND u.is_deleted = FALSE
     ''', (room_id,))
     members = cursor.fetchall()
     

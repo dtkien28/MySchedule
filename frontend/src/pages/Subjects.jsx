@@ -40,6 +40,9 @@ export default function Subjects() {
 
   useEffect(() => {
     loadData();
+    const handleReload = () => loadData();
+    window.addEventListener('reloadSubjects', handleReload);
+    return () => window.removeEventListener('reloadSubjects', handleReload);
   }, []);
 
   const loadData = async () => {

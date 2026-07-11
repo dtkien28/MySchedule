@@ -180,6 +180,21 @@ def init_db():
     ''')
     
     conn.commit()
+    
+    # Bổ sung cột is_deleted cho xóa mềm vào các bảng
+    tables = [
+        'users', 'groups', 'group_members', 'music_links', 'playlists', 
+        'playlist_items', 'study_rooms', 'study_room_members', 'group_meetings', 
+        'subjects', 'study_times', 'work_schedules', 'tasks'
+    ]
+    for t in tables:
+        try:
+            cursor.execute(f"ALTER TABLE {t} ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT FALSE;")
+        except Exception as e:
+            print(f"Error adding is_deleted to {t}: {e}")
+            conn.rollback()
+    
+    conn.commit()
     conn.close()
 
 if __name__ == "__main__":
