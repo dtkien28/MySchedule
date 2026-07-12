@@ -3,7 +3,7 @@ import api from '../api';
 import toast from 'react-hot-toast';
 
 // Typewriter hook
-function useTypewriter(text, speed = 50) {
+function useTypewriter(text = '', speed = 50) {
   const [displayedText, setDisplayedText] = useState('');
 
   useEffect(() => {

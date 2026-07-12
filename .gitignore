@@ -30,3 +30,14 @@ models/
 
 server.py
 inference.py
+
+# Testing & Coverage
+.pytest_cache/
+test-results/
+cypress/screenshots/
+cypress/videos/
+playwright-report/
+blob-report/
+coverage/
+.nyc_output/
+*.log
