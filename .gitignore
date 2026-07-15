@@ -41,3 +41,5 @@ blob-report/
 coverage/
 .nyc_output/
 *.log
+
+testing/

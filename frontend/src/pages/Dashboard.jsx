@@ -15,6 +15,17 @@ export default function Dashboard() {
     return uniWeek;
   };
 
+  const getAcademicYear = (d) => {
+    const date = new Date(d.getTime());
+    date.setUTCDate(date.getUTCDate() + 4 - (date.getUTCDay()||7));
+    const yearStart = new Date(Date.UTC(date.getUTCFullYear(),0,1));
+    const isoWeek = Math.ceil((((date - yearStart) / 86400000) + 1)/7);
+    if (isoWeek + ACADEMIC_OFFSET > 52) {
+      return date.getUTCFullYear() + 1;
+    }
+    return date.getUTCFullYear();
+  };
+
   const getDatesOfWeek = (uniWeek, year = new Date().getFullYear()) => {
     let isoWeek = uniWeek - ACADEMIC_OFFSET;
     let targetYear = year;
@@ -48,6 +59,7 @@ export default function Dashboard() {
   const [meetings, setMeetings] = useState([]);
   const [progress, setProgress] = useState(null);
   const [currentWeek, setCurrentWeek] = useState(() => getWeekNumber(new Date()));
+  const [currentYear, setCurrentYear] = useState(() => getAcademicYear(new Date()));
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskDate, setNewTaskDate] = useState(new Date().toISOString().split('T')[0]);
   const [newTaskTimeStart, setNewTaskTimeStart] = useState('');
@@ -82,7 +94,7 @@ export default function Dashboard() {
       window.removeEventListener('reloadSubjects', handleReload);
       window.removeEventListener('reloadTasks', handleReload);
     };
-  }, [currentWeek]);
+  }, [currentWeek, currentYear]);
 
   const fetchData = async () => {
     try {
@@ -132,7 +144,7 @@ export default function Dashboard() {
       tRes.data.forEach(t => {
         if (t.scheduled_day && t.scheduled_time_start && t.scheduled_time_end) {
           const tDate = new Date(t.scheduled_day);
-          if (getWeekNumber(tDate) === currentWeek) {
+          if (getWeekNumber(tDate) === currentWeek && getAcademicYear(tDate) === currentYear) {
             const daysMap = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
             evts.push({
               type: t.status === 'done' ? 'task-done' : (t.status === 'doing' ? 'task-doing' : 'task-todo'),
@@ -148,7 +160,7 @@ export default function Dashboard() {
       mRes.data.forEach(m => {
         if (m.scheduled_day && m.time_start && m.time_end) {
           const mDate = new Date(m.scheduled_day);
-          if (getWeekNumber(mDate) === currentWeek) {
+          if (getWeekNumber(mDate) === currentWeek && getAcademicYear(mDate) === currentYear) {
             const daysMap = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
             evts.push({
               type: 'group-meeting',
@@ -355,14 +367,30 @@ export default function Dashboard() {
         {/* TIMEGRID SECTION (70%) */}
         <div className="card" style={{flex: '0 0 65%', display: 'flex', flexDirection: 'column', height: '100%', boxSizing: 'border-box'}}>
           <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px'}}>
-            <h3>Lịch tuần {currentWeek}</h3>
+            <h3>Lịch tuần {currentWeek} <span style={{fontSize: '1rem', color: 'var(--text-muted)'}}>(NH {currentYear - 1} - {currentYear})</span></h3>
             <div>
-              <button className="btn btn-outline" style={{border: '1px solid var(--border-color)', marginRight: '10px'}} onClick={() => setCurrentWeek(c => Math.max(1, c - 1))}>&lt; Tuần trước</button>
-              <button className="btn btn-outline" style={{border: '1px solid var(--border-color)'}} onClick={() => setCurrentWeek(c => Math.min(52, c + 1))}>Tuần sau &gt;</button>
+              <button className="btn btn-outline" style={{border: '1px solid var(--border-color)', marginRight: '10px'}} onClick={() => {
+                setCurrentWeek(c => {
+                  if (c === 1) {
+                    setCurrentYear(y => y - 1);
+                    return 52;
+                  }
+                  return c - 1;
+                });
+              }}>&lt; Tuần trước</button>
+              <button className="btn btn-outline" style={{border: '1px solid var(--border-color)'}} onClick={() => {
+                setCurrentWeek(c => {
+                  if (c === 52) {
+                    setCurrentYear(y => y + 1);
+                    return 1;
+                  }
+                  return c + 1;
+                });
+              }}>Tuần sau &gt;</button>
             </div>
           </div>
           <div style={{flex: 1, overflowY: 'auto'}}>
-            <TimeGrid events={events} onToggleAttendance={toggleAttendance} weekDates={getDatesOfWeek(currentWeek)} />
+            <TimeGrid events={events} onToggleAttendance={toggleAttendance} weekDates={getDatesOfWeek(currentWeek, currentYear)} />
           </div>
         </div>
 

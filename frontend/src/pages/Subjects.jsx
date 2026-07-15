@@ -352,9 +352,9 @@ export default function Subjects() {
             {currentView === 'week' && (
               <div>
                 <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px'}}>
-                  <button className="btn btn-outline" style={{border: '1px solid var(--border-color)'}} onClick={() => setCurrentWeek(c => Math.max(1, c - 1))}>&lt; Tuần trước</button>
+                  <button className="btn btn-outline" style={{border: '1px solid var(--border-color)'}} onClick={() => setCurrentWeek(c => c === 1 ? 52 : c - 1)}>&lt; Tuần trước</button>
                   <h3 style={{margin: 0}}>Tuần {currentWeek}</h3>
-                  <button className="btn btn-outline" style={{border: '1px solid var(--border-color)'}} onClick={() => setCurrentWeek(c => Math.min(52, c + 1))}>Tuần sau &gt;</button>
+                  <button className="btn btn-outline" style={{border: '1px solid var(--border-color)'}} onClick={() => setCurrentWeek(c => c === 52 ? 1 : c + 1)}>Tuần sau &gt;</button>
                 </div>
                 {renderCaTable(getSubjectBlocks((s, t) => currentWeek >= s.start_week && currentWeek <= s.end_week && !t.cancel_weeks.includes(currentWeek)))}
               </div>
