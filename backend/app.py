@@ -31,8 +31,9 @@ UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'static', 'uploads', 'mu
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 # CORS restricted to frontend
-allowed_origin = os.getenv("ALLOWED_ORIGIN", "http://localhost:5173")
-CORS(app, resources={r"/api/*": {"origins": allowed_origin}})
+raw_origins = os.getenv("ALLOWED_ORIGIN", "http://localhost:5173")
+allowed_origins = [origin.strip() for origin in raw_origins.split(",")]
+CORS(app, resources={r"/api/*": {"origins": allowed_origins}})
 
 # Security headers (allow HTTP for local dev)
 Talisman(app, force_https=False)
