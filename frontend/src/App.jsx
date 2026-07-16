@@ -67,7 +67,7 @@ function App() {
     };
 
     if (bgImage) {
-      document.body.style.backgroundImage = `url('/images/${bgImage}')`;
+      document.body.style.backgroundImage = `url('/${bgImage}')`;
     } else {
       applyWeatherBg();
     }

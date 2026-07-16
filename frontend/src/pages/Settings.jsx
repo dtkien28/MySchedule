@@ -14,10 +14,9 @@ export default function Settings() {
   // Example themes
   const backgrounds = [
     { id: '', name: 'Mặc định (Theo thời tiết)', requiredStreak: 0 },
-    { id: 'bg1.jpg', name: 'Thành phố về đêm', requiredStreak: 3 },
-    { id: 'bg2.jpg', name: 'Hoàng hôn biển', requiredStreak: 7 },
-    { id: 'bg3.jpg', name: 'Khu rừng huyền bí', requiredStreak: 14 },
-    { id: 'bg4.jpg', name: 'Không gian vũ trụ', requiredStreak: 30 }
+    { id: 'streak3.png', name: 'Streak 3 Ngày', requiredStreak: 3 },
+    { id: 'streak7.png', name: 'Streak 7 Ngày', requiredStreak: 7 },
+    { id: 'streak14.png', name: 'Streak 14 Ngày', requiredStreak: 14 }
   ];
 
   useEffect(() => {
@@ -57,7 +56,7 @@ export default function Settings() {
       }
 
       if (bgImage) {
-        document.body.style.backgroundImage = `url('/images/${bgImage}')`;
+        document.body.style.backgroundImage = `url('/${bgImage}')`;
       } else {
         // Leave it for weather logic to pick up next reload or manual refresh
         document.body.style.backgroundImage = 'none';
